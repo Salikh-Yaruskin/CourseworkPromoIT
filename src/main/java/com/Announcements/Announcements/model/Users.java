@@ -9,6 +9,7 @@ public class Users {
     private int id;
     private String username;
     private String password;
+    private String role;
 
     public String getUsername() {
         return username;
@@ -34,12 +35,21 @@ public class Users {
         this.id = id;
     }
 
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
+    }
+
     @Override
     public String toString() {
         return "Users{" +
                 "id=" + id +
                 ", username='" + username + '\'' +
                 ", password='" + password + '\'' +
+                ", role='" + role + '\'' +
                 '}';
     }
 }

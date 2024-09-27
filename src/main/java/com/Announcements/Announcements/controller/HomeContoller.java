@@ -1,23 +1,22 @@
 package com.Announcements.Announcements.controller;
 
 import com.Announcements.Announcements.model.News;
+import com.Announcements.Announcements.model.Users;
+import com.Announcements.Announcements.service.NewsService;
+import com.Announcements.Announcements.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @RestController
 public class HomeContoller {
+    @Autowired
+    private NewsService newsService;
 
-    private List<News> news = new ArrayList<>(
-            List.of(
-                    new News("Navin", "60"),
-                    new News("Kiran", "65")
-            ));
+    @Autowired
+    private UserService userService;
 
     @GetMapping("/")
     public String home(){
@@ -39,14 +38,27 @@ public class HomeContoller {
         return "Welcome to USER home!";
     }
 
-    @PostMapping("admin/news")
-    public News addNews(@RequestBody News newss){
-        news.add(newss);
-        return newss;
-    }
+//    @GetMapping("/news/")
+//    public List<News> getNewsUser(@RequestParam(required = false, defaultValue = "0") Integer userId) {
+//        return newsService.getNewsUser(userId);
+//    }
 
     @GetMapping("/news")
-    public List<News> getNews(){
-        return news;
+    public List<News> getAll() {
+        return newsService.getAll();
+    }
+
+    @GetMapping("/news/{id}")
+    public News getNews(@PathVariable Integer id){
+        return newsService.getNews(id);
+    }
+
+    @PostMapping("/admin/news")
+    public News addNews(@RequestBody News news) {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        Users user = userService.findByUsername(username);
+        news.setUser(user);
+        return newsService.addNews(news);
     }
 }

@@ -50,7 +50,8 @@ public class HomeContoller {
 
     @GetMapping("/news/{id}")
     public News getNews(@PathVariable Integer id){
-        return newsService.getNews(id);
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        return  newsService.getNews(id, username);
     }
 
     @PostMapping("/admin/news")

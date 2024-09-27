@@ -1,9 +1,6 @@
 package com.Announcements.Announcements.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.*;
 import org.springframework.security.core.userdetails.User;
 
 @Entity
@@ -15,6 +12,8 @@ public class News {
     @ManyToOne
     @JoinColumn(name = "userId")
     private Users user;
+    @Column(name = "view_count", nullable = false)
+    private Integer ViewCount = 0;
 
     public News() {
     }
@@ -55,6 +54,14 @@ public class News {
 
     public void setUser(Users user) {
         this.user = user;
+    }
+
+    public Integer getViewCount() {
+        return ViewCount;
+    }
+
+    public void setViewCount(Integer viewCount) {
+        ViewCount = viewCount;
     }
 
 

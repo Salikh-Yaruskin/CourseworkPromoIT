@@ -10,6 +10,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Objects;
 
 @RestController
 public class HomeContoller {
@@ -42,10 +43,37 @@ public class HomeContoller {
         return "Welcome to USER home!";
     }
 
+    @GetMapping("/user/my-news")
+    public List<News> getNewsUser() {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        Users user = userService.findByUsername(username);
+        if (user == null) {
+            return List.of();
+        }
+        return newsService.getNewsByUserId(user.getId());
+    }
+
+    @PutMapping("/user/my-news/{id}")
+    public News updateNews(@PathVariable Integer id, @RequestBody News updatedNews) {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        Users user = userService.findByUsername(username);
+
+        News existingNews = newsService.getNews(id, username);
+        if (existingNews == null || !Objects.equals(existingNews.getUser().getId(), user.getId())) {
+            throw new IllegalArgumentException("Вы не можете редактировать эту новость.");
+        }
+
+        existingNews.setName(updatedNews.getName());
+        existingNews.setDescription(updatedNews.getDescription());
+
+        return newsService.updateNews(existingNews);
+    }
+
 //    @GetMapping("/news/")
 //    public List<News> getNewsUser(@RequestParam(required = false, defaultValue = "0") Integer userId) {
-//        return newsService.getNewsUser(userId);
-//    }
+//       return newsService.getNewsUser(userId);
+//   }
 
     @GetMapping("/news")
     public List<News> getAll() {

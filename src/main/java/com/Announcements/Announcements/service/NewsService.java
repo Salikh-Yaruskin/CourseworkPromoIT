@@ -71,10 +71,22 @@ public class NewsService {
         return news;
     }
 
+    public List<News> getNewsByUserId(Integer userId) {
+        return StreamSupport.stream(newsRepository.findAllByUserId(userId).spliterator(), false).toList();
+    }
+
+
 
     public News addNews(News news) {
         if (news == null) {
             throw new IllegalArgumentException("Entity is null");
+        }
+        return newsRepository.save(news);
+    }
+
+    public News updateNews(News news) {
+        if (news == null || news.getId() == null) {
+            throw new IllegalArgumentException("Новость не найдена или некорректна.");
         }
         return newsRepository.save(news);
     }

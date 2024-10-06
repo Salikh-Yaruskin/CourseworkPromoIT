@@ -24,7 +24,7 @@ public class News {
         this.user = user;
     }
 
-    public int getId() {
+    public Integer getId() {
         return id;
     }
 

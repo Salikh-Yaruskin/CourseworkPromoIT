@@ -8,6 +8,7 @@ public class Users {
     @Id
     private int id;
     private String username;
+    private String gmail;
     private String password;
     private String role;
 
@@ -17,6 +18,12 @@ public class Users {
 
     public void setUsername(String username) {
         this.username = username;
+    }
+
+    public String getGmail() { return gmail;}
+
+    public void setGmail(String gmail) {
+        this.gmail = gmail;
     }
 
     public String getPassword() {
@@ -48,6 +55,7 @@ public class Users {
         return "Users{" +
                 "id=" + id +
                 ", username='" + username + '\'' +
+                ", gmail='" + gmail + '\'' +
                 ", password='" + password + '\'' +
                 ", role='" + role + '\'' +
                 '}';

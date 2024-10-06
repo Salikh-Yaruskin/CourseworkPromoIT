@@ -2,6 +2,7 @@ package com.Announcements.Announcements.controller;
 
 import com.Announcements.Announcements.model.News;
 import com.Announcements.Announcements.model.Users;
+import com.Announcements.Announcements.service.EmailService;
 import com.Announcements.Announcements.service.NewsService;
 import com.Announcements.Announcements.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +18,9 @@ public class HomeContoller {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private EmailService emailService;
 
     @GetMapping("/")
     public String home(){
@@ -46,6 +50,33 @@ public class HomeContoller {
     @GetMapping("/news")
     public List<News> getAll() {
         return newsService.getAll();
+    }
+
+    @PostMapping("/news/{id}/send-email")
+    public String sendEmailToAuthor(@PathVariable Integer id, @RequestBody String message){
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        News news = newsService.getNews(id, username);
+        if (news == null) {
+            return "Новость не найдена";
+        }
+
+        Users author = news.getUser();
+        if (author == null || author.getGmail() == null) {
+            return "Автор не верный или почта не верна!";
+        }
+
+        if(author.getUsername().equals(username)){
+            return "Вы не можете комментировать свои новости!";
+        }
+
+        emailService.sendSimpleEmail(
+                author.getGmail(),
+                "Комментарий от пользователя!",
+                message,
+                author.getUsername()
+        );
+
+        return "Письмо отправлено: " + author.getUsername();
     }
 
     @GetMapping("/news/{id}")

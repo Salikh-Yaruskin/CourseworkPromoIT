@@ -3,6 +3,7 @@ package com.Announcements.Announcements.model;
 import jakarta.persistence.*;
 import org.springframework.security.core.userdetails.User;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
@@ -16,6 +17,8 @@ public class News {
     @Column(name = "view_count", nullable = false)
     private Integer ViewCount = 0;
     private Status status;
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
 
     public News() {
     }
@@ -24,6 +27,7 @@ public class News {
         this.name = name;
         this.description = description;
         this.user = user;
+        this.createdAt = LocalDateTime.now();
     }
 
     public Integer getId() {
@@ -74,6 +78,13 @@ public class News {
         this.status = status;
     }
 
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
 
     @Override
     public String toString() {
@@ -82,6 +93,7 @@ public class News {
                 ", description='" + description + '\'' +
                 ", user='" + user + '\'' +
                 ", status='" + status + '\'' +
+                ", createdAt='" + createdAt + '\'' +
                 '}';
     }
 }

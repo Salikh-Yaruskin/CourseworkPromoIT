@@ -15,6 +15,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -98,5 +99,12 @@ public class UserService {
 
     public Users updateUser(Users user){
         return userRepository.save(user);
+    }
+
+    public Users updateLimitNews(Integer id, Integer newLimit){
+        Users user = userRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Такой пользователь не найден!"));
+
+        user.setLimitNews(newLimit);
+        return  userRepository.save(user);
     }
 }

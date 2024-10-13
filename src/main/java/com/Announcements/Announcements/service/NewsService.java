@@ -8,11 +8,14 @@ import com.Announcements.Announcements.model.Users;
 import com.Announcements.Announcements.repository.NewsRepository;
 import com.Announcements.Announcements.repository.UserRepository;
 import com.Announcements.Announcements.repository.UserViewRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
 import java.util.stream.StreamSupport;
 
@@ -102,14 +105,30 @@ public class NewsService {
         return StreamSupport.stream(newsRepository.findAllByUserId(userId).spliterator(), false).toList();
     }
 
+    @Transactional
     public News addNews(News news) throws Exception {
         if (news == null) {
             throw new IllegalArgumentException("Entity is null");
         }
+
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         Users user = userService.findByUsername(username);
 
+        LocalDateTime startOfDay = LocalDateTime.now().toLocalDate().atStartOfDay();
+        LocalDateTime endOfDay = LocalDateTime.now().toLocalDate().atTime(LocalTime.MAX);
+
+        List<News> todayAnnouncements = newsRepository.findAllByUserIdAndCreatedAtBetween(user.getId(), startOfDay, endOfDay);
+        int todayAnnouncementsCount = todayAnnouncements.size();
+
+        if (todayAnnouncementsCount >= user.getLimitNews()) {
+            throw new Exception("Вы не можете публиковать больше " + user.getLimitNews() + " объявлений в день");
+        }
+
         userService.checkBlocking(user.getId());
+
+        System.out.println(todayAnnouncementsCount);
+        news.setUser(user);
+        news.setCreatedAt(LocalDateTime.now());
         return newsRepository.save(news);
     }
 

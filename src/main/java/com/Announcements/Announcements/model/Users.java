@@ -13,6 +13,7 @@ public class Users {
     private String password;
     private String role;
     private Status status;
+    private Integer limitNews = 5;
 
     public String getUsername() {
         return username;
@@ -60,6 +61,14 @@ public class Users {
         this.status = status;
     }
 
+    public Integer getLimitNews() {
+        return limitNews;
+    }
+
+    public void setLimitNews(Integer limitNews) {
+        this.limitNews = limitNews;
+    }
+
     @Override
     public String toString() {
         return "Users{" +
@@ -69,6 +78,7 @@ public class Users {
                 ", password='" + password + '\'' +
                 ", role='" + role + '\'' +
                 ", status='" + status + '\'' +
+                ", limitNews='" + limitNews + '\'' +
                 '}';
     }
 }

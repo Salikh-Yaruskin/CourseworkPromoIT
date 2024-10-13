@@ -9,6 +9,7 @@ import com.Announcements.Announcements.repository.NewsRepository;
 import com.Announcements.Announcements.repository.UserRepository;
 import com.Announcements.Announcements.repository.UserViewRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
@@ -101,10 +102,14 @@ public class NewsService {
         return StreamSupport.stream(newsRepository.findAllByUserId(userId).spliterator(), false).toList();
     }
 
-    public News addNews(News news) {
+    public News addNews(News news) throws Exception {
         if (news == null) {
             throw new IllegalArgumentException("Entity is null");
         }
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        Users user = userService.findByUsername(username);
+
+        userService.checkBlocking(user.getId());
         return newsRepository.save(news);
     }
 

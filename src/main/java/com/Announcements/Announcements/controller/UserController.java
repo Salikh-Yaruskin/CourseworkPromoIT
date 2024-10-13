@@ -39,7 +39,7 @@ public class UserController {
 
     // создание объявления
     @PostMapping("/user/create-news")
-    public News addNews(@RequestBody News news) {
+    public News addNews(@RequestBody News news) throws Exception {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         Users user = userService.findByUsername(username);
         news.setUser(user);

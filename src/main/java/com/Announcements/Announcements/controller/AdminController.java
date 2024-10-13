@@ -1,5 +1,6 @@
 package com.Announcements.Announcements.controller;
 
+import com.Announcements.Announcements.MyException.UserSelfException;
 import com.Announcements.Announcements.model.News;
 import com.Announcements.Announcements.model.Users;
 import com.Announcements.Announcements.service.NewsService;
@@ -46,7 +47,16 @@ public class AdminController {
     }
 
     // блокирование клиента
+    @PutMapping("/admin/user-blocked/{id}")
+    public Users blockedUser(@PathVariable Integer id, @RequestBody Users blockedUser) throws UserSelfException {
+        return userService.blockUser(id);
+    }
 
+    // разблокирование клиента
+    @PutMapping("/admin/user-unblocked/{id}")
+    public Users unblockedUser(@PathVariable Integer id, @RequestBody Users unBlockedUser) throws UserSelfException {
+        return userService.unblockUser(id);
+    }
 
     // настройка лимита объявлений клиентом в день
 

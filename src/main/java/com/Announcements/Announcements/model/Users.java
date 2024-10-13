@@ -12,6 +12,7 @@ public class Users {
     private String gmail;
     private String password;
     private String role;
+    private Status status;
 
     public String getUsername() {
         return username;
@@ -51,6 +52,14 @@ public class Users {
         this.role = role;
     }
 
+    public Status getStatus() {
+        return status;
+    }
+
+    public void setStatus(Status status) {
+        this.status = status;
+    }
+
     @Override
     public String toString() {
         return "Users{" +
@@ -59,6 +68,7 @@ public class Users {
                 ", gmail='" + gmail + '\'' +
                 ", password='" + password + '\'' +
                 ", role='" + role + '\'' +
+                ", status='" + status + '\'' +
                 '}';
     }
 }

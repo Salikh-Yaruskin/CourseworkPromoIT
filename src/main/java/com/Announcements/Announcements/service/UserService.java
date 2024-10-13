@@ -9,6 +9,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -25,6 +27,9 @@ public class UserService {
 
     public Users register(Users user){
         user.setPassword(bCryptPasswordEncoder.encode(user.getPassword()));
+        if (Objects.equals(user.getRole(), "string")){
+            user.setRole("USER");
+        }
         return userRepository.save(user);
     }
 

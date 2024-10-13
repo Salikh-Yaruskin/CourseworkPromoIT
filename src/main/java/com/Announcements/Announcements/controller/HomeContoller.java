@@ -70,6 +70,15 @@ public class HomeContoller {
         return newsService.updateNews(existingNews);
     }
 
+    @PutMapping("/admin/all-news/{id}")
+    public News updateAdminNews(@PathVariable Integer id, @RequestBody News updatedNews){
+        News news = newsService.getNews(id);
+
+        news.setName(updatedNews.getName());
+        news.setDescription(updatedNews.getDescription());
+        return newsService.updateNews(news);
+    }
+
 //    @GetMapping("/news/")
 //    public List<News> getNewsUser(@RequestParam(required = false, defaultValue = "0") Integer userId) {
 //       return newsService.getNewsUser(userId);
@@ -113,7 +122,7 @@ public class HomeContoller {
         return  newsService.getNews(id, username);
     }
 
-    @PostMapping("/admin/news")
+    @PostMapping("/user/create-news")
     public News addNews(@RequestBody News news) {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
 

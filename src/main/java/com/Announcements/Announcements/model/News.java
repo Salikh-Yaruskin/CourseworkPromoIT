@@ -3,6 +3,8 @@ package com.Announcements.Announcements.model;
 import jakarta.persistence.*;
 import org.springframework.security.core.userdetails.User;
 
+import java.util.List;
+
 @Entity
 public class News {
     @Id
@@ -10,7 +12,6 @@ public class News {
     String name;
     String description;
     @ManyToOne
-    @JoinColumn(name = "userId")
     private Users user;
     @Column(name = "view_count", nullable = false)
     private Integer ViewCount = 0;

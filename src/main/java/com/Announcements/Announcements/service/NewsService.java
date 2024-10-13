@@ -71,6 +71,16 @@ public class NewsService {
         return news;
     }
 
+    public News getNews(Integer id){
+        Optional<News> newsOptional = newsRepository.findById(id);
+        if(!newsOptional.isPresent()){
+            throw new NoSuchElementException("Not found news with id: " + id);
+        }
+        News news = newsOptional.get();
+
+        return news;
+    }
+
     public List<News> getNewsByUserId(Integer userId) {
         return StreamSupport.stream(newsRepository.findAllByUserId(userId).spliterator(), false).toList();
     }
@@ -89,5 +99,18 @@ public class NewsService {
             throw new IllegalArgumentException("Новость не найдена или некорректна.");
         }
         return newsRepository.save(news);
+    }
+
+    public void deleteNews(Integer id){
+        Optional<News> newsOptional = newsRepository.findById(id);
+        if (!newsOptional.isPresent()) {
+            throw new NoSuchElementException("News not found with id: " + id);
+        }
+        News news = newsOptional.get();
+
+        List<UserView> userViews = userViewRepository.findAllByNews(news);
+        userViewRepository.deleteAll(userViews);
+
+        newsRepository.deleteById(id);
     }
 }

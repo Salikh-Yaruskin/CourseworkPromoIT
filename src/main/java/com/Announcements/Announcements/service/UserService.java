@@ -47,4 +47,13 @@ public class UserService {
         Optional<Users> user = userRepository.findByUsername(username);
         return user.orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
     }
+
+    public Users findById(Integer id){
+        Optional<Users> user = userRepository.findById(id);
+        return user.orElseThrow(() -> new UsernameNotFoundException("User not found with id: " + id));
+    }
+
+    public Users updateUser(Users user){
+        return userRepository.save(user);
+    }
 }

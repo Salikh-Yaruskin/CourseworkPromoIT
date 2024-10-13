@@ -1,6 +1,8 @@
 package com.Announcements.Announcements.service;
 
+import com.Announcements.Announcements.MyException.BlockedException;
 import com.Announcements.Announcements.model.News;
+import com.Announcements.Announcements.model.Status;
 import com.Announcements.Announcements.model.UserView;
 import com.Announcements.Announcements.model.Users;
 import com.Announcements.Announcements.repository.NewsRepository;
@@ -10,11 +12,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.StreamSupport;
-import java.util.Optional;
 
 @Service
 public class NewsService {
@@ -40,10 +39,28 @@ public class NewsService {
     }
 
     public List<News> getAll() {
-        return StreamSupport.stream(newsRepository.findAll().spliterator(), false).toList();
+        List<News> news = StreamSupport.stream(newsRepository.findAll().spliterator(), false).toList();
+        List<News> ansNews = new ArrayList<>();
+        for (News a : news){
+            if(a.getStatus() == Status.UNBLOCKED){
+                ansNews.add(a);
+            }
+        }
+        return ansNews;
     }
 
-    public News getNews(Integer id, String username) {
+    public List<News> getArchive(){
+        List<News> news = StreamSupport.stream(newsRepository.findAll().spliterator(), false).toList();
+        List<News> archiveNews = new ArrayList<>();
+        for (News a : news){
+            if (a.getStatus() == Status.BLOCKED){
+                archiveNews.add(a);
+            }
+        }
+        return archiveNews;
+    }
+
+    public News getNews(Integer id, String username) throws Exception{
         Optional<News> newsOptional = newsRepository.findById(id);
 
         if (!newsOptional.isPresent()) {
@@ -67,7 +84,6 @@ public class NewsService {
             UserView userView = new UserView(user, news);
             userViewRepository.save(userView);
         }
-
         return news;
     }
 
@@ -84,8 +100,6 @@ public class NewsService {
     public List<News> getNewsByUserId(Integer userId) {
         return StreamSupport.stream(newsRepository.findAllByUserId(userId).spliterator(), false).toList();
     }
-
-
 
     public News addNews(News news) {
         if (news == null) {

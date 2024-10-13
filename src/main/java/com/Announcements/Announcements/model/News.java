@@ -15,6 +15,7 @@ public class News {
     private Users user;
     @Column(name = "view_count", nullable = false)
     private Integer ViewCount = 0;
+    private Status status;
 
     public News() {
     }
@@ -65,6 +66,14 @@ public class News {
         ViewCount = viewCount;
     }
 
+    public Status getStatus(){
+        return status;
+    }
+
+    public void setStatus(Status status){
+        this.status = status;
+    }
+
 
     @Override
     public String toString() {
@@ -72,6 +81,7 @@ public class News {
                 "name='" + name + '\'' +
                 ", description='" + description + '\'' +
                 ", user='" + user + '\'' +
+                ", status='" + status + '\'' +
                 '}';
     }
 }

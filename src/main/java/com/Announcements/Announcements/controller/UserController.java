@@ -2,9 +2,16 @@ package com.Announcements.Announcements.controller;
 
 import com.Announcements.Announcements.model.News;
 import com.Announcements.Announcements.model.Users;
+import com.Announcements.Announcements.service.CaptchaService;
 import com.Announcements.Announcements.service.EmailService;
 import com.Announcements.Announcements.service.NewsService;
 import com.Announcements.Announcements.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
@@ -25,6 +32,9 @@ public class UserController {
     @Autowired
     private EmailService emailService;
 
+    @Autowired
+    private CaptchaService captchaService;
+
     // регистрация
     @PostMapping("/register")
     public Users register(@RequestBody Users user){
@@ -37,9 +47,13 @@ public class UserController {
         return userService.verify(user);
     }
 
-    // создание объявления
+    // метод создания объявления с Captcha
     @PostMapping("/user/create-news")
-    public News addNews(@RequestBody News news) throws Exception {
+    public News addNews(@RequestBody News news, @Parameter(description = "reCAPTCHA ответ") @RequestHeader("g-recaptcha-response") String captchaResponse) throws Exception {
+        if (!captchaService.validateCaptcha(captchaResponse)) {
+            throw new Exception("Captcha validation failed.");
+        }
+
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         Users user = userService.findByUsername(username);
         news.setUser(user);

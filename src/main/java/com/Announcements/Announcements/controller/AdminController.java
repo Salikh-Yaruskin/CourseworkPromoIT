@@ -59,6 +59,16 @@ public class AdminController {
     }
 
     // настройка лимита объявлений клиентом в день
+    @PutMapping("/admin/user-limit/{id}")
+    public Users userLimit(@PathVariable Integer id, @RequestBody Integer updateLimit) {
+        Users user = userService.findById(id);
+        if (user == null){
+            throw new NoSuchElementException("Нет такого пользователя!");
+        }
+
+        user.setLimitNews(updateLimit);
+        return userService.updateUser(user);
+    }
 
     // просмотр архива объявлений
     @GetMapping("/admin/news-archive")

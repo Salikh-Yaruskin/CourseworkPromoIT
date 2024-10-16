@@ -8,6 +8,7 @@ import com.Announcements.Announcements.service.EmailService;
 import com.Announcements.Announcements.service.NewsService;
 import com.Announcements.Announcements.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,6 +33,12 @@ public class HomeContoller {
     @GetMapping("/news")
     public List<News> getAll() {
         return newsService.getAll();
+    }
+
+    // просмотр объявлений с пагинацией
+    @GetMapping("/news/{page}/{size}")
+    public Page<News> getAllWithPagination(@PathVariable Integer page, @PathVariable Integer size) {
+        return newsService.findNewsWithPagination(page, size);
     }
 
     @GetMapping("/news/{id}")

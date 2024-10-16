@@ -10,6 +10,8 @@ import com.Announcements.Announcements.repository.UserRepository;
 import com.Announcements.Announcements.repository.UserViewRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
@@ -126,7 +128,6 @@ public class NewsService {
 
         userService.checkBlocking(user.getId());
 
-        System.out.println(todayAnnouncementsCount);
         news.setUser(user);
         news.setCreatedAt(LocalDateTime.now());
         return newsRepository.save(news);
@@ -150,5 +151,9 @@ public class NewsService {
         userViewRepository.deleteAll(userViews);
 
         newsRepository.deleteById(id);
+    }
+
+    public Page<News> findNewsWithPagination(int offset, int size){
+        return newsRepository.findAll(PageRequest.of(offset, size));
     }
 }

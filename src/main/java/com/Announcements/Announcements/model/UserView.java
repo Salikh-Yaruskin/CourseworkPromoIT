@@ -8,7 +8,7 @@ public class UserView {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", nullable = false, updatable = false) // Убедитесь, что id не изменяется вручную
+    @Column(name = "id", nullable = false, updatable = false)
     private Integer id;
 
     @ManyToOne

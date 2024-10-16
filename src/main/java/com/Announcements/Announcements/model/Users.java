@@ -1,5 +1,7 @@
 package com.Announcements.Announcements.model;
 
+import com.Announcements.Announcements.dto.LoginDTO;
+import com.Announcements.Announcements.dto.UserDTO;
 import jakarta.persistence.*;
 
 import java.util.List;
@@ -14,6 +16,20 @@ public class Users {
     private String role;
     private Status status;
     private Integer limitNews = 5;
+
+    public Users(){
+
+    }
+
+    public Users(UserDTO userDTO) {
+        this.id = userDTO.id();
+        this.username = userDTO.username();
+        this.gmail = userDTO.gmail();
+        this.password = userDTO.password();
+        this.role = userDTO.role();
+        this.status = userDTO.status();
+        this.limitNews = 5;
+    }
 
     public String getUsername() {
         return username;

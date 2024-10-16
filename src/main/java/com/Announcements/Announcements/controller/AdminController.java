@@ -1,6 +1,10 @@
 package com.Announcements.Announcements.controller;
 
 import com.Announcements.Announcements.MyException.UserSelfException;
+import com.Announcements.Announcements.dto.NewsDTO;
+import com.Announcements.Announcements.dto.RoleDTO;
+import com.Announcements.Announcements.dto.UpdateNewsDTO;
+import com.Announcements.Announcements.dto.UserDTO;
 import com.Announcements.Announcements.model.News;
 import com.Announcements.Announcements.model.Users;
 import com.Announcements.Announcements.service.NewsService;
@@ -22,28 +26,49 @@ public class AdminController {
 
     // редактирование объявления
     @PutMapping("/admin/all-news/{id}")
-    public News updateAdminNews(@PathVariable Integer id, @RequestBody News updateNews){
+    public NewsDTO updateAdminNews(@PathVariable Integer id, @RequestBody UpdateNewsDTO updateNewsDto){
         News news = newsService.getNews(id);
         if (news == null){
             throw new NoSuchElementException("Нет такой новости!");
         }
 
-        news.setName(updateNews.getName());
-        news.setDescription(updateNews.getDescription());
+        news.setName(updateNewsDto.name());
+        news.setDescription(updateNewsDto.description());
 
-        return newsService.updateNews(news);
+        News updatedNews = newsService.updateNews(news);
+
+        return new NewsDTO(
+                updatedNews.getId(),
+                updatedNews.getName(),
+                updatedNews.getDescription(),
+                updatedNews.getUser().getUsername(),
+                updatedNews.getUser().getGmail(),
+                updatedNews.getViewCount(),
+                updatedNews.getStatus()
+        );
     }
 
     // удаление объявления
     @DeleteMapping("/admin/news/{id}")
-    public News deleteNews(@PathVariable Integer id){
+    public NewsDTO deleteNews(@PathVariable Integer id) {
         News news = newsService.getNews(id);
-        if(news == null){
+        if (news == null) {
             throw new NoSuchElementException("Нет такой новости!");
         }
 
+        NewsDTO deletedNewsDTO = new NewsDTO(
+                news.getId(),
+                news.getName(),
+                news.getDescription(),
+                news.getUser().getUsername(),
+                news.getUser().getGmail(),
+                news.getViewCount(),
+                news.getStatus()
+        );
+
         newsService.deleteNews(id);
-        return news;
+
+        return deletedNewsDTO;
     }
 
     // блокирование клиента
@@ -72,7 +97,19 @@ public class AdminController {
 
     // просмотр архива объявлений
     @GetMapping("/admin/news-archive")
-    public List<News> getArchive(){
+    public List<NewsDTO> getArchive(){
         return newsService.getArchive();
+    }
+
+    // выдача роли пользователю
+    @PutMapping("/admin/user-role/{id}")
+    public UserDTO updateUserRole(@PathVariable Integer id, @RequestBody RoleDTO roleDTO){
+        return userService.updateRole(id, roleDTO.role());
+    }
+
+    // выдача списка со всеми пользователями
+    @GetMapping("/admin/all-user")
+    public List<UserDTO> getAllUser(){
+        return userService.getAllUser();
     }
 }

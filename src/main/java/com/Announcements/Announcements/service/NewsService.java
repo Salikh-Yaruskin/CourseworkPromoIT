@@ -1,6 +1,7 @@
 package com.Announcements.Announcements.service;
 
 import com.Announcements.Announcements.MyException.BlockedException;
+import com.Announcements.Announcements.dto.NewsDTO;
 import com.Announcements.Announcements.model.News;
 import com.Announcements.Announcements.model.Status;
 import com.Announcements.Announcements.model.UserView;
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 @Service
@@ -44,7 +46,7 @@ public class NewsService {
         return StreamSupport.stream(newsRepository.findAllByUserId(newsId).spliterator(), false).toList();
     }
 
-    public List<News> getAll() {
+    public List<NewsDTO> getAll() {
         List<News> news = StreamSupport.stream(newsRepository.findAll().spliterator(), false).toList();
         List<News> ansNews = new ArrayList<>();
         for (News a : news){
@@ -52,10 +54,22 @@ public class NewsService {
                 ansNews.add(a);
             }
         }
-        return ansNews;
+        return ansNews
+                .stream()
+                .map(newsdto -> new NewsDTO(
+                        newsdto.getId(),
+                        newsdto.getName(),
+                        newsdto.getDescription(),
+                        newsdto.getUser().getUsername(),
+                        newsdto.getUser().getGmail(),
+                        newsdto.getViewCount(),
+                        newsdto.getStatus()
+
+                ))
+                .collect(Collectors.toList());
     }
 
-    public List<News> getArchive(){
+    public List<NewsDTO> getArchive(){
         List<News> news = StreamSupport.stream(newsRepository.findAll().spliterator(), false).toList();
         List<News> archiveNews = new ArrayList<>();
         for (News a : news){
@@ -63,10 +77,20 @@ public class NewsService {
                 archiveNews.add(a);
             }
         }
-        return archiveNews;
+        return archiveNews.stream()
+                .map(a -> new NewsDTO(
+                        a.getId(),
+                        a.getName(),
+                        a.getDescription(),
+                        a.getUser().getUsername(),
+                        a.getUser().getGmail(),
+                        a.getViewCount(),
+                        a.getStatus()
+                ))
+                .collect(Collectors.toList());
     }
 
-    public News getNews(Integer id, String username) throws Exception{
+    public NewsDTO getNews(Integer id, String username) throws Exception{
         Optional<News> newsOptional = newsRepository.findById(id);
 
         if (!newsOptional.isPresent()) {
@@ -90,21 +114,35 @@ public class NewsService {
             UserView userView = new UserView(user, news);
             userViewRepository.save(userView);
         }
-        return news;
+        return new NewsDTO(
+                news.getId(),
+                news.getName(),
+                news.getDescription(),
+                news.getUser().getUsername(),
+                news.getUser().getGmail(),
+                news.getViewCount(),
+                news.getStatus()
+        );
     }
 
-    public News getNews(Integer id){
-        Optional<News> newsOptional = newsRepository.findById(id);
-        if(!newsOptional.isPresent()){
-            throw new NoSuchElementException("Not found news with id: " + id);
-        }
-        News news = newsOptional.get();
-
-        return news;
+    public News getNews(Integer id) {
+        return newsRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Not found news with id: " + id));
     }
 
-    public List<News> getNewsByUserId(Integer userId) {
-        return StreamSupport.stream(newsRepository.findAllByUserId(userId).spliterator(), false).toList();
+    public List<NewsDTO> getNewsByUserId(Integer userId) {
+        return StreamSupport.stream(newsRepository.findAllByUserId(userId).spliterator(), false)
+                .map(news -> new NewsDTO(
+                news.getId(),
+                news.getName(),
+                news.getDescription(),
+                news.getUser().getUsername(),
+                news.getUser().getGmail(),
+                news.getViewCount(),
+                news.getStatus()
+
+        ))
+                .collect(Collectors.toList());
     }
 
     @Transactional
@@ -130,6 +168,16 @@ public class NewsService {
 
         news.setUser(user);
         news.setCreatedAt(LocalDateTime.now());
+        return newsRepository.save(news);
+    }
+
+    public News updateNews(Integer id, Status status) throws Exception {
+        Optional<News> newsOptional = newsRepository.findById(id);
+        if (!newsOptional.isPresent()) {
+            throw new NoSuchElementException("News not found with id: " + id);
+        }
+        News news = newsOptional.get();
+        news.setStatus(status);
         return newsRepository.save(news);
     }
 

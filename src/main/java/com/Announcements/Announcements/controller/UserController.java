@@ -1,6 +1,11 @@
 package com.Announcements.Announcements.controller;
 
+import com.Announcements.Announcements.dto.CreateNewsDTO;
+import com.Announcements.Announcements.dto.LoginDTO;
+import com.Announcements.Announcements.dto.NewsDTO;
+import com.Announcements.Announcements.dto.UserDTO;
 import com.Announcements.Announcements.model.News;
+import com.Announcements.Announcements.model.Status;
 import com.Announcements.Announcements.model.Users;
 import com.Announcements.Announcements.service.CaptchaService;
 import com.Announcements.Announcements.service.EmailService;
@@ -37,60 +42,73 @@ public class UserController {
 
     // регистрация
     @PostMapping("/register")
-    public Users register(@RequestBody Users user){
-        return userService.register(user);
+    public UserDTO register(@RequestBody UserDTO userDTO){
+        return userService.register(userDTO);
     }
 
     // вход
     @PostMapping("/login")
-    public String login(@RequestBody Users user){
-        return userService.verify(user);
+    public String login(@RequestBody LoginDTO loginDTO){
+        return userService.verify(loginDTO);
     }
 
     // метод создания объявления с Captcha
     @PostMapping("/user/create-news")
-    public News addNews(@RequestBody News news, @Parameter(description = "reCAPTCHA ответ") @RequestHeader("g-recaptcha-response") String captchaResponse) throws Exception {
+    public NewsDTO addNews(@RequestBody CreateNewsDTO newsDto, @RequestHeader("g-recaptcha-response") String captchaResponse) throws Exception {
         if (!captchaService.validateCaptcha(captchaResponse)) {
             throw new Exception("Captcha validation failed.");
         }
 
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         Users user = userService.findByUsername(username);
+
+        News news = new News(newsDto);
         news.setUser(user);
-        return newsService.addNews(news);
+        News createdNews = newsService.addNews(news);
+
+        return new NewsDTO(
+                createdNews.getId(),
+                createdNews.getName(),
+                createdNews.getDescription(),
+                createdNews.getUser().getUsername(),
+                createdNews.getUser().getGmail(),
+                createdNews.getViewCount(),
+                createdNews.getStatus()
+        );
     }
 
     // ответ на объявление (отправкой email на почту автора объявления)
     @PostMapping("/user/news/{id}/send-email")
     public String sendEmailToAuthor(@PathVariable Integer id, @RequestBody String message) throws Exception{
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        News news = newsService.getNews(id, username);
-        if (news == null) {
+        NewsDTO newsDto  = newsService.getNews(id, username);
+        if (newsDto  == null) {
             return "Новость не найдена";
         }
 
-        Users author = news.getUser();
-        if (author == null || author.getGmail() == null) {
+        String author = newsDto.username();
+        String gmail = newsDto.gmail();
+        if (author == null || gmail == null) {
             return "Автор не верный или почта не верна!";
         }
 
-        if(author.getUsername().equals(username)){
+        if(newsDto.username().equals(username)){
             return "Вы не можете комментировать свои новости!";
         }
 
         emailService.sendSimpleEmail(
-                author.getGmail(),
+                gmail,
                 "Комментарий от пользователя!",
                 message,
-                author.getUsername()
+                username
         );
 
-        return "Письмо отправлено: " + author.getUsername();
+        return "Письмо отправлено: " + username;
     }
 
     // просмотр своих объявлений с отображнием количества просмотров
     @GetMapping("/user/my-news")
-    public List<News> getNewsUser() {
+    public List<NewsDTO> getNewsUser() {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
 
         Users user = userService.findByUsername(username);
@@ -102,18 +120,25 @@ public class UserController {
 
     // закрытие объявления его автором
     @PutMapping("/user/my-news/status/{id}")
-    public News updateStatusNews(@PathVariable Integer id, @RequestBody News updatedNews) throws Exception {
+    public NewsDTO updateStatusNews(@PathVariable Integer id, @RequestBody Status updatedNewsStatus) throws Exception {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         Users user = userService.findByUsername(username);
 
-        News existingNews = newsService.getNews(id, username);
+        NewsDTO existingNews = newsService.getNews(id, username);
 
-        if (existingNews == null || !Objects.equals(existingNews.getUser().getId(), user.getId())) {
+        if (existingNews == null || !Objects.equals(existingNews.username(), user.getUsername())) {
             throw new IllegalArgumentException("Вы не можете редактировать эту новость.");
         }
 
-        existingNews.setStatus(updatedNews.getStatus());
-
-        return newsService.updateNews(existingNews);
+        News updatedNews = newsService.updateNews(id, updatedNewsStatus);
+        return new NewsDTO(
+                updatedNews.getId(),
+                updatedNews.getName(),
+                updatedNews.getDescription(),
+                updatedNews.getUser().getUsername(),
+                updatedNews.getUser().getGmail(),
+                updatedNews.getViewCount(),
+                updatedNews.getStatus()
+        );
     }
 }

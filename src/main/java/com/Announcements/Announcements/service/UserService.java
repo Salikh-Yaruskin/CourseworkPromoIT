@@ -2,6 +2,9 @@ package com.Announcements.Announcements.service;
 
 import com.Announcements.Announcements.MyException.BlockedException;
 import com.Announcements.Announcements.MyException.UserSelfException;
+import com.Announcements.Announcements.dto.LoginDTO;
+import com.Announcements.Announcements.dto.NewsDTO;
+import com.Announcements.Announcements.dto.UserDTO;
 import com.Announcements.Announcements.model.Status;
 import com.Announcements.Announcements.model.Users;
 import com.Announcements.Announcements.repository.UserRepository;
@@ -15,9 +18,9 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.NoSuchElementException;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 @Service
 public class UserService {
@@ -31,20 +34,39 @@ public class UserService {
     @Autowired
     private JWTService jwtService;
 
-    public Users register(Users user){
-        user.setPassword(bCryptPasswordEncoder.encode(user.getPassword()));
-        if (Objects.equals(user.getRole(), "string")){
+    public UserDTO register(UserDTO userDTO) {
+        if (userDTO.password() == null || userDTO.password().isEmpty()) {
+            throw new IllegalArgumentException("Пароль не может быть пустым");
+        }
+
+        Users user = new Users(userDTO);
+
+        user.setPassword(bCryptPasswordEncoder.encode(userDTO.password()));
+
+        if (Objects.equals(user.getRole(), "string") || user.getRole() == null) {
             user.setRole("USER");
         }
-        return userRepository.save(user);
+
+        user.setStatus(Status.UNBLOCKED);
+
+        Users savedUser = userRepository.save(user);
+
+        return new UserDTO(
+                savedUser.getId(),
+                savedUser.getUsername(),
+                savedUser.getGmail(),
+                null,
+                savedUser.getRole(),
+                savedUser.getStatus()
+        );
     }
 
-    public String verify(Users user) {
+    public String verify(LoginDTO loginDTO) {
         Authentication authentication =
                 authenticationManager.authenticate(
-                        new UsernamePasswordAuthenticationToken(user.getUsername(), user.getPassword()));
+                        new UsernamePasswordAuthenticationToken(loginDTO.username(), loginDTO.password()));
         if (authentication.isAuthenticated()){
-            return jwtService.generateToken(user.getUsername());
+            return jwtService.generateToken(loginDTO.username());
         }
         return "Fail";
     }
@@ -105,6 +127,43 @@ public class UserService {
         Users user = userRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Такой пользователь не найден!"));
 
         user.setLimitNews(newLimit);
-        return  userRepository.save(user);
+        return userRepository.save(user);
+    }
+
+    public UserDTO updateRole(Integer id, String updateRole){
+        Optional<Users> usersOptional = userRepository.findById(id);
+        Users user = usersOptional.get();
+
+        user.setRole(updateRole);
+
+        Users userUpd = userRepository.save(user);
+
+        return new UserDTO(
+                userUpd.getId(),
+                userUpd.getUsername(),
+                userUpd.getGmail(),
+                null,
+                userUpd.getRole(),
+                userUpd.getStatus()
+        );
+    }
+
+    public List<UserDTO> getAllUser(){
+        List<Users> users = StreamSupport.stream(userRepository.findAll().spliterator(), false).toList();
+        List<Users> usersList = new ArrayList<>();
+        usersList.addAll(users);
+
+        return usersList
+                .stream()
+                .map(user -> new UserDTO(
+                        user.getId(),
+                        user.getUsername(),
+                        user.getGmail(),
+                        null,
+                        user.getRole(),
+                        user.getStatus()
+
+                ))
+                .collect(Collectors.toList());
     }
 }

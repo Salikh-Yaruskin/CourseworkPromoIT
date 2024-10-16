@@ -1,6 +1,7 @@
 package com.Announcements.Announcements.controller;
 
 import com.Announcements.Announcements.MyException.BlockedException;
+import com.Announcements.Announcements.dto.NewsDTO;
 import com.Announcements.Announcements.model.News;
 import com.Announcements.Announcements.model.Status;
 import com.Announcements.Announcements.model.Users;
@@ -23,15 +24,9 @@ public class HomeContoller {
     @Autowired
     private UserService userService;
 
-
-//    @GetMapping("/news/")
-//    public List<News> getNewsUser(@RequestParam(required = false, defaultValue = "0") Integer userId) {
-//       return newsService.getNewsUser(userId);
-//   }
-
     // просмотр объявлений с отображнием количества просмотров
     @GetMapping("/news")
-    public List<News> getAll() {
+    public List<NewsDTO> getAll() {
         return newsService.getAll();
     }
 
@@ -41,11 +36,12 @@ public class HomeContoller {
         return newsService.findNewsWithPagination(page, size);
     }
 
+    // получение объявления по id
     @GetMapping("/news/{id}")
-    public News getNews(@PathVariable Integer id) throws Exception{
+    public NewsDTO getNews(@PathVariable Integer id) throws Exception{
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        News news = newsService.getNews(id, username);
-        if(news.getStatus() == Status.BLOCKED){
+        NewsDTO newsDTO = newsService.getNews(id, username);
+        if(newsDTO.status() == Status.BLOCKED){
             throw new BlockedException("Новость скрыта");
         }
         return newsService.getNews(id, username);

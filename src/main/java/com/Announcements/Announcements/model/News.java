@@ -1,10 +1,9 @@
 package com.Announcements.Announcements.model;
 
+import com.Announcements.Announcements.dto.CreateNewsDTO;
 import jakarta.persistence.*;
-import org.springframework.security.core.userdetails.User;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Entity
 public class News {
@@ -15,7 +14,7 @@ public class News {
     @ManyToOne
     private Users user;
     @Column(name = "view_count", nullable = false)
-    private Integer ViewCount = 0;
+    private Integer ViewCount;
     private Status status;
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -23,10 +22,12 @@ public class News {
     public News() {
     }
 
-    public News(String name, String description, Users user){
-        this.name = name;
-        this.description = description;
-        this.user = user;
+    public News(CreateNewsDTO newsDTO) {
+        this.id = newsDTO.id();
+        this.name = newsDTO.name();
+        this.description = newsDTO.description();
+        this.status = newsDTO.status();
+        this.ViewCount = 0;
         this.createdAt = LocalDateTime.now();
     }
 

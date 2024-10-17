@@ -55,9 +55,7 @@ public class UserService {
                 savedUser.getId(),
                 savedUser.getUsername(),
                 savedUser.getGmail(),
-                null,
-                savedUser.getRole(),
-                savedUser.getStatus()
+                null
         );
     }
 
@@ -81,7 +79,7 @@ public class UserService {
                 .orElseThrow(() -> new UsernameNotFoundException("Target user not found"));
 
         if (currentUser.equals(targetUser)) {
-            throw new UserSelfException("Вы не можете заблокировать или разблокировать сами себя");
+            throw new UserSelfException("Ошибка блокировки", "Вы не можете заблокировать или разблокировать сами себя");
         }
 
         return targetUser;
@@ -142,9 +140,7 @@ public class UserService {
                 userUpd.getId(),
                 userUpd.getUsername(),
                 userUpd.getGmail(),
-                null,
-                userUpd.getRole(),
-                userUpd.getStatus()
+                null
         );
     }
 
@@ -159,9 +155,7 @@ public class UserService {
                         user.getId(),
                         user.getUsername(),
                         user.getGmail(),
-                        null,
-                        user.getRole(),
-                        user.getStatus()
+                        null
 
                 ))
                 .collect(Collectors.toList());

@@ -1,6 +1,7 @@
 package com.Announcements.Announcements.service;
 
 import com.Announcements.Announcements.MyException.BlockedException;
+import com.Announcements.Announcements.MyException.UnlimitedException;
 import com.Announcements.Announcements.dto.NewsDTO;
 import com.Announcements.Announcements.model.News;
 import com.Announcements.Announcements.model.Status;
@@ -12,6 +13,7 @@ import com.Announcements.Announcements.repository.UserViewRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -161,7 +163,7 @@ public class NewsService {
         int todayAnnouncementsCount = todayAnnouncements.size();
 
         if (todayAnnouncementsCount >= user.getLimitNews()) {
-            throw new Exception("Вы не можете публиковать больше " + user.getLimitNews() + " объявлений в день");
+            throw new UnlimitedException("Вы не можете публиковать больше " + user.getLimitNews() + " объявлений в день");
         }
 
         userService.checkBlocking(user.getId());
@@ -201,7 +203,21 @@ public class NewsService {
         newsRepository.deleteById(id);
     }
 
-    public Page<News> findNewsWithPagination(int offset, int size){
-        return newsRepository.findAll(PageRequest.of(offset, size));
+    public Page<NewsDTO> findNewsWithPagination(int offset, int size){
+        Page<News> newsPage = newsRepository.findAll(PageRequest.of(offset, size));
+        List<NewsDTO> filteredNewsDTOList = newsPage.stream()
+                .filter(news -> news.getStatus() != Status.BLOCKED)
+                .map(news -> new NewsDTO(
+                        news.getId(),
+                        news.getName(),
+                        news.getDescription(),
+                        news.getUser().getUsername(),
+                        news.getUser().getGmail(),
+                        news.getViewCount(),
+                        news.getStatus()
+                ))
+                .toList();
+
+        return new PageImpl<>(filteredNewsDTOList, PageRequest.of(offset, size), filteredNewsDTOList.size());
     }
 }

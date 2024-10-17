@@ -6,7 +6,5 @@ public record UserDTO(
         int id,
         String username,
         String gmail,
-        String password,
-        String role,
-        Status status
+        String password
 ) {}

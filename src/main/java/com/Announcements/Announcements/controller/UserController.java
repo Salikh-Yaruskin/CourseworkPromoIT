@@ -1,5 +1,6 @@
 package com.Announcements.Announcements.controller;
 
+import com.Announcements.Announcements.MyException.CaptchaException;
 import com.Announcements.Announcements.dto.CreateNewsDTO;
 import com.Announcements.Announcements.dto.LoginDTO;
 import com.Announcements.Announcements.dto.NewsDTO;
@@ -40,23 +41,47 @@ public class UserController {
     @Autowired
     private CaptchaService captchaService;
 
-    // регистрация
+    @Operation(
+            summary = "Регистрация нового пользователя",
+            description = "Позволяет зарегистрировать нового пользователя в системе",
+            responses = {
+                    @ApiResponse(description = "Успешная регистрация", responseCode = "200",
+                            content = @Content(schema = @Schema(implementation = UserDTO.class))),
+                    @ApiResponse(description = "Ошибка валидации или регистрация не удалась", responseCode = "400")
+            }
+    )
     @PostMapping("/register")
     public UserDTO register(@RequestBody UserDTO userDTO){
         return userService.register(userDTO);
     }
 
-    // вход
+    @Operation(
+            summary = "Авторизация пользователя",
+            description = "Позволяет авторизовать пользователя по логину и паролю",
+            responses = {
+                    @ApiResponse(description = "Успешная авторизация", responseCode = "200"),
+                    @ApiResponse(description = "Неверные данные авторизации", responseCode = "401")
+            }
+    )
     @PostMapping("/login")
     public String login(@RequestBody LoginDTO loginDTO){
         return userService.verify(loginDTO);
     }
 
-    // метод создания объявления с Captcha
+    @Operation(
+            summary = "Создание новости с проверкой reCaptcha",
+            description = "Позволяет авторизованным пользователям создать новость. Для создания новости необходимо пройти проверку reCaptcha. Используйте тестовый ключ: test-captcha-token.",
+            responses = {
+                    @ApiResponse(description = "Новость успешно создана", responseCode = "200",
+                            content = @Content(schema = @Schema(implementation = NewsDTO.class))),
+                    @ApiResponse(description = "Ошибка валидации Captcha", responseCode = "429"),
+                    @ApiResponse(description = "Пользователь не авторизован", responseCode = "401")
+            }
+    )
     @PostMapping("/user/create-news")
     public NewsDTO addNews(@RequestBody CreateNewsDTO newsDto, @RequestHeader("g-recaptcha-response") String captchaResponse) throws Exception {
         if (!captchaService.validateCaptcha(captchaResponse)) {
-            throw new Exception("Captcha validation failed.");
+            throw new CaptchaException("Captcha validation failed.");
         }
 
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -77,12 +102,20 @@ public class UserController {
         );
     }
 
-    // ответ на объявление (отправкой email на почту автора объявления)
+    @Operation(
+            summary = "Отправка сообщения автору новости",
+            description = "Позволяет отправить email автору выбранной новости. Отправка доступна только для новостей, которые не принадлежат текущему пользователю.",
+            responses = {
+                    @ApiResponse(description = "Письмо успешно отправлено", responseCode = "200"),
+                    @ApiResponse(description = "Новость не найдена или почта автора не указана", responseCode = "404"),
+                    @ApiResponse(description = "Попытка отправить сообщение на свою новость", responseCode = "400")
+            }
+    )
     @PostMapping("/user/news/{id}/send-email")
-    public String sendEmailToAuthor(@PathVariable Integer id, @RequestBody String message) throws Exception{
+    public String sendEmailToAuthor(@PathVariable Integer id, @RequestBody String message) throws Exception {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         NewsDTO newsDto  = newsService.getNews(id, username);
-        if (newsDto  == null) {
+        if (newsDto == null) {
             return "Новость не найдена";
         }
 
@@ -92,7 +125,7 @@ public class UserController {
             return "Автор не верный или почта не верна!";
         }
 
-        if(newsDto.username().equals(username)){
+        if (newsDto.username().equals(username)) {
             return "Вы не можете комментировать свои новости!";
         }
 
@@ -106,7 +139,14 @@ public class UserController {
         return "Письмо отправлено: " + username;
     }
 
-    // просмотр своих объявлений с отображнием количества просмотров
+    @Operation(
+            summary = "Просмотр собственных новостей",
+            description = "Позволяет авторизованному пользователю просмотреть свои объявления с отображением количества просмотров.",
+            responses = {
+                    @ApiResponse(description = "Список новостей успешно получен", responseCode = "200"),
+                    @ApiResponse(description = "Пользователь не найден", responseCode = "404")
+            }
+    )
     @GetMapping("/user/my-news")
     public List<NewsDTO> getNewsUser() {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -118,7 +158,15 @@ public class UserController {
         return newsService.getNewsByUserId(user.getId());
     }
 
-    // закрытие объявления его автором
+    @Operation(
+            summary = "Изменение статуса новости",
+            description = "Позволяет автору новости изменить её статус. Доступно только для новостей, которые принадлежат текущему пользователю.",
+            responses = {
+                    @ApiResponse(description = "Статус новости успешно обновлен", responseCode = "200",
+                            content = @Content(schema = @Schema(implementation = NewsDTO.class))),
+                    @ApiResponse(description = "Пользователь не может редактировать чужие новости", responseCode = "403")
+            }
+    )
     @PutMapping("/user/my-news/status/{id}")
     public NewsDTO updateStatusNews(@PathVariable Integer id, @RequestBody Status updatedNewsStatus) throws Exception {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -142,3 +190,4 @@ public class UserController {
         );
     }
 }
+

@@ -26,8 +26,6 @@ public class Users {
         this.username = userDTO.username();
         this.gmail = userDTO.gmail();
         this.password = userDTO.password();
-        this.role = userDTO.role();
-        this.status = userDTO.status();
         this.limitNews = 5;
     }
 

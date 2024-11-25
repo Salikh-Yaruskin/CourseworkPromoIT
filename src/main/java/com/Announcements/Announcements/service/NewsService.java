@@ -3,6 +3,9 @@ package com.Announcements.Announcements.service;
 import com.Announcements.Announcements.MyException.BlockedException;
 import com.Announcements.Announcements.MyException.UnlimitedException;
 import com.Announcements.Announcements.dto.NewsDTO;
+import com.Announcements.Announcements.dto.UserDTO;
+import com.Announcements.Announcements.mapper.NewsMapper;
+import com.Announcements.Announcements.mapper.UserMapper;
 import com.Announcements.Announcements.model.News;
 import com.Announcements.Announcements.model.Status;
 import com.Announcements.Announcements.model.UserView;
@@ -36,16 +39,23 @@ public class NewsService {
     @Autowired
     private UserViewRepository userViewRepository;
 
+    @Autowired
+    private UserMapper userMapper;
+    @Autowired
+    private NewsMapper newsMapper;
+
     public NewsService(NewsRepository newsRepository, UserService userService) {
         this.newsRepository = newsRepository;
         this.userService = userService;
     }
 
-    public List<News> getNewsUser(Integer newsId) {
+    public List<NewsDTO> getNewsUser(Integer newsId) {
         if (Objects.equals(newsId, 0L)) {
-            return StreamSupport.stream(newsRepository.findAll().spliterator(), false).toList();
+            List<News> list = StreamSupport.stream(newsRepository.findAll().spliterator(), false).toList();
+            return newsMapper.toNewsDTOList(list);
         }
-        return StreamSupport.stream(newsRepository.findAllByUserId(newsId).spliterator(), false).toList();
+        List<News> list_id = StreamSupport.stream(newsRepository.findAllByUserId(newsId).spliterator(), false).toList();
+        return newsMapper.toNewsDTOList(list_id);
     }
 
     public List<NewsDTO> getAll() {
@@ -56,19 +66,7 @@ public class NewsService {
                 ansNews.add(a);
             }
         }
-        return ansNews
-                .stream()
-                .map(newsdto -> new NewsDTO(
-                        newsdto.getId(),
-                        newsdto.getName(),
-                        newsdto.getDescription(),
-                        newsdto.getUser().getUsername(),
-                        newsdto.getUser().getGmail(),
-                        newsdto.getViewCount(),
-                        newsdto.getStatus()
-
-                ))
-                .collect(Collectors.toList());
+        return newsMapper.toNewsDTOList(ansNews);
     }
 
     public List<NewsDTO> getArchive(){
@@ -79,17 +77,7 @@ public class NewsService {
                 archiveNews.add(a);
             }
         }
-        return archiveNews.stream()
-                .map(a -> new NewsDTO(
-                        a.getId(),
-                        a.getName(),
-                        a.getDescription(),
-                        a.getUser().getUsername(),
-                        a.getUser().getGmail(),
-                        a.getViewCount(),
-                        a.getStatus()
-                ))
-                .collect(Collectors.toList());
+        return newsMapper.toNewsDTOList(archiveNews);
     }
 
     public NewsDTO getNews(Integer id, String username) throws Exception{
@@ -116,15 +104,7 @@ public class NewsService {
             UserView userView = new UserView(user, news);
             userViewRepository.save(userView);
         }
-        return new NewsDTO(
-                news.getId(),
-                news.getName(),
-                news.getDescription(),
-                news.getUser().getUsername(),
-                news.getUser().getGmail(),
-                news.getViewCount(),
-                news.getStatus()
-        );
+        return newsMapper.toNewsDTO(news);
     }
 
     public News getNews(Integer id) {
@@ -133,61 +113,53 @@ public class NewsService {
     }
 
     public List<NewsDTO> getNewsByUserId(Integer userId) {
-        return StreamSupport.stream(newsRepository.findAllByUserId(userId).spliterator(), false)
-                .map(news -> new NewsDTO(
-                news.getId(),
-                news.getName(),
-                news.getDescription(),
-                news.getUser().getUsername(),
-                news.getUser().getGmail(),
-                news.getViewCount(),
-                news.getStatus()
-
-        ))
-                .collect(Collectors.toList());
+        List<News> news = StreamSupport.stream(newsRepository.findAllByUserId(userId).spliterator(), false).toList();
+        return newsMapper.toNewsDTOList(news);
     }
 
     @Transactional
-    public News addNews(News news) throws Exception {
+    public NewsDTO addNews(News news) throws Exception {
         if (news == null) {
             throw new IllegalArgumentException("Entity is null");
         }
 
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        Users user = userService.findByUsername(username);
+        UserDTO user = userService.findByUsername(username);
 
         LocalDateTime startOfDay = LocalDateTime.now().toLocalDate().atStartOfDay();
         LocalDateTime endOfDay = LocalDateTime.now().toLocalDate().atTime(LocalTime.MAX);
 
-        List<News> todayAnnouncements = newsRepository.findAllByUserIdAndCreatedAtBetween(user.getId(), startOfDay, endOfDay);
+        List<News> todayAnnouncements = newsRepository.findAllByUserIdAndCreatedAtBetween(userMapper.fromUserDto(user).getId(), startOfDay, endOfDay);
         int todayAnnouncementsCount = todayAnnouncements.size();
 
-        if (todayAnnouncementsCount >= user.getLimitNews()) {
-            throw new UnlimitedException("Вы не можете публиковать больше " + user.getLimitNews() + " объявлений в день");
+        if (todayAnnouncementsCount >= userMapper.fromUserDto(user).getLimitNews()) {
+            throw new UnlimitedException("Вы не можете публиковать больше " + userMapper.fromUserDto(user).getLimitNews() + " объявлений в день");
         }
 
-        userService.checkBlocking(user.getId());
+        userService.checkBlocking(userMapper.fromUserDto(user).getId());
 
-        news.setUser(user);
+        news.setUser(userMapper.fromUserDto(user));
         news.setCreatedAt(LocalDateTime.now());
-        return newsRepository.save(news);
+        newsRepository.save(news);
+        return newsMapper.toNewsDTO(news);
     }
 
-    public News updateNews(Integer id, Status status) throws Exception {
+    public NewsDTO updateNews(Integer id, Status status) throws Exception {
         Optional<News> newsOptional = newsRepository.findById(id);
         if (!newsOptional.isPresent()) {
             throw new NoSuchElementException("News not found with id: " + id);
         }
         News news = newsOptional.get();
         news.setStatus(status);
-        return newsRepository.save(news);
+        newsRepository.save(news);
+        return newsMapper.toNewsDTO(news);
     }
 
-    public News updateNews(News news) {
+    public NewsDTO updateNews(News news) {
         if (news == null || news.getId() == null) {
             throw new IllegalArgumentException("Новость не найдена или некорректна.");
         }
-        return newsRepository.save(news);
+        return newsMapper.toNewsDTO(news);
     }
 
     public void deleteNews(Integer id){
@@ -205,19 +177,9 @@ public class NewsService {
 
     public Page<NewsDTO> findNewsWithPagination(int offset, int size){
         Page<News> newsPage = newsRepository.findAll(PageRequest.of(offset, size));
-        List<NewsDTO> filteredNewsDTOList = newsPage.stream()
-                .filter(news -> news.getStatus() != Status.BLOCKED)
-                .map(news -> new NewsDTO(
-                        news.getId(),
-                        news.getName(),
-                        news.getDescription(),
-                        news.getUser().getUsername(),
-                        news.getUser().getGmail(),
-                        news.getViewCount(),
-                        news.getStatus()
-                ))
-                .toList();
+        List<News> filteredNewsList = newsPage.stream()
+                .filter(news -> news.getStatus() != Status.BLOCKED).toList();
 
-        return new PageImpl<>(filteredNewsDTOList, PageRequest.of(offset, size), filteredNewsDTOList.size());
+        return new PageImpl<>(newsMapper.toNewsDTOList(filteredNewsList), PageRequest.of(offset, size), newsMapper.toNewsDTOList(filteredNewsList).size());
     }
 }

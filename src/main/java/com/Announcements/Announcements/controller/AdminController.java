@@ -5,6 +5,7 @@ import com.Announcements.Announcements.dto.NewsDTO;
 import com.Announcements.Announcements.dto.RoleDTO;
 import com.Announcements.Announcements.dto.UpdateNewsDTO;
 import com.Announcements.Announcements.dto.UserDTO;
+import com.Announcements.Announcements.mapper.NewsMapper;
 import com.Announcements.Announcements.model.News;
 import com.Announcements.Announcements.model.Users;
 import com.Announcements.Announcements.service.NewsService;
@@ -28,6 +29,9 @@ public class AdminController {
     @Autowired
     private NewsService newsService;
 
+    @Autowired
+    private NewsMapper newsMapper;
+
     @Operation(
             summary = "Редактирование объявления",
             description = "Позволяет администратору редактировать существующее объявление по его ID.",
@@ -47,17 +51,7 @@ public class AdminController {
         news.setName(updateNewsDto.name());
         news.setDescription(updateNewsDto.description());
 
-        News updatedNews = newsService.updateNews(news);
-
-        return new NewsDTO(
-                updatedNews.getId(),
-                updatedNews.getName(),
-                updatedNews.getDescription(),
-                updatedNews.getUser().getUsername(),
-                updatedNews.getUser().getGmail(),
-                updatedNews.getViewCount(),
-                updatedNews.getStatus()
-        );
+        return newsService.updateNews(news);
     }
 
     @Operation(
@@ -76,15 +70,7 @@ public class AdminController {
             throw new NoSuchElementException("Нет такой новости!");
         }
 
-        NewsDTO deletedNewsDTO = new NewsDTO(
-                news.getId(),
-                news.getName(),
-                news.getDescription(),
-                news.getUser().getUsername(),
-                news.getUser().getGmail(),
-                news.getViewCount(),
-                news.getStatus()
-        );
+        NewsDTO deletedNewsDTO = newsMapper.toNewsDTO(news);
 
         newsService.deleteNews(id);
 
@@ -102,9 +88,9 @@ public class AdminController {
             }
     )
     @PutMapping("/admin/user-blocked/{id}")
-    public String blockedUser(@PathVariable Integer id, @RequestBody Users blockedUser) throws UserSelfException {
-        userService.blockUser(id);
-        return blockedUser.getUsername() + ":" + blockedUser.getStatus() ;
+    public String blockedUser(@PathVariable Integer id) throws UserSelfException {
+        UserDTO userDTO = userService.blockUser(id);
+        return userDTO.username();
     }
 
     @Operation(
@@ -118,9 +104,9 @@ public class AdminController {
             }
     )
     @PutMapping("/admin/user-unblocked/{id}")
-    public String unblockedUser(@PathVariable Integer id, @RequestBody Users unBlockedUser) throws UserSelfException {
-        userService.unblockUser(id);
-        return unBlockedUser.getUsername() + ":" + unBlockedUser.getStatus() ;
+    public String unblockedUser(@PathVariable Integer id) throws UserSelfException {
+        UserDTO userDTO = userService.unblockUser(id);
+        return userDTO.username();
     }
 
     @Operation(
@@ -133,15 +119,8 @@ public class AdminController {
             }
     )
     @PutMapping("/admin/user-limit/{id}")
-    public Integer userLimit(@PathVariable Integer id, @RequestBody Integer updateLimit) {
-        Users user = userService.findById(id);
-        if (user == null) {
-            throw new NoSuchElementException("Нет такого пользователя!");
-        }
-
-        user.setLimitNews(updateLimit);
-        userService.updateUser(user);
-        return user.getLimitNews();
+    public UserDTO userLimit(@PathVariable Integer id, @RequestBody Integer updateLimit) {
+        return userService.updateLimitNews(id, updateLimit);
     }
 
     @Operation(

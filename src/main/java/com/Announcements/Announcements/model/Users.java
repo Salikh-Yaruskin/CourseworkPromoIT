@@ -1,6 +1,7 @@
 package com.Announcements.Announcements.model;
 
 import com.Announcements.Announcements.dto.LoginDTO;
+import com.Announcements.Announcements.dto.UserCreateDTO;
 import com.Announcements.Announcements.dto.UserDTO;
 import jakarta.persistence.*;
 
@@ -25,7 +26,6 @@ public class Users {
         this.id = userDTO.id();
         this.username = userDTO.username();
         this.gmail = userDTO.gmail();
-        this.password = userDTO.password();
         this.limitNews = 5;
     }
 

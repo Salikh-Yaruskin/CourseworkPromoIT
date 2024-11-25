@@ -1,10 +1,8 @@
 package com.Announcements.Announcements.dto;
 
-import com.Announcements.Announcements.model.Status;
-
-public record UserDTO(
+public record UserCreateDTO(
         int id,
         String username,
         String gmail,
-        String role
-) {}
+        String password
+) { }

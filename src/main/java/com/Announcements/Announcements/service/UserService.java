@@ -4,7 +4,9 @@ import com.Announcements.Announcements.MyException.BlockedException;
 import com.Announcements.Announcements.MyException.UserSelfException;
 import com.Announcements.Announcements.dto.LoginDTO;
 import com.Announcements.Announcements.dto.NewsDTO;
+import com.Announcements.Announcements.dto.UserCreateDTO;
 import com.Announcements.Announcements.dto.UserDTO;
+import com.Announcements.Announcements.mapper.UserMapper;
 import com.Announcements.Announcements.model.Status;
 import com.Announcements.Announcements.model.Users;
 import com.Announcements.Announcements.repository.UserRepository;
@@ -30,18 +32,21 @@ public class UserService {
     private BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder(12);
 
     @Autowired
+    private UserMapper userMapper;
+
+    @Autowired
     AuthenticationManager authenticationManager;
     @Autowired
     private JWTService jwtService;
 
-    public UserDTO register(UserDTO userDTO) {
-        if (userDTO.password() == null || userDTO.password().isEmpty()) {
+    public UserCreateDTO register(UserCreateDTO userCreateDTO) {
+        if (userCreateDTO.password() == null || userCreateDTO.password().isEmpty()) {
             throw new IllegalArgumentException("Пароль не может быть пустым");
         }
 
-        Users user = new Users(userDTO);
+        Users user = userMapper.fromUserCreateDto(userCreateDTO);
 
-        user.setPassword(bCryptPasswordEncoder.encode(userDTO.password()));
+        user.setPassword(bCryptPasswordEncoder.encode(userCreateDTO.password()));
 
         if (Objects.equals(user.getRole(), "string") || user.getRole() == null) {
             user.setRole("USER");
@@ -51,12 +56,7 @@ public class UserService {
 
         Users savedUser = userRepository.save(user);
 
-        return new UserDTO(
-                savedUser.getId(),
-                savedUser.getUsername(),
-                savedUser.getGmail(),
-                null
-        );
+        return userCreateDTO;
     }
 
     public String verify(LoginDTO loginDTO) {
@@ -85,18 +85,20 @@ public class UserService {
         return targetUser;
     }
 
-    public Users blockUser(Integer id) throws UserSelfException {
+    public UserDTO blockUser(Integer id) throws UserSelfException {
         Users targetUser = getTargetUser(id);
 
         targetUser.setStatus(Status.BLOCKED);
-        return userRepository.save(targetUser);
+        userRepository.save(targetUser);
+        return userMapper.toUserDTO(targetUser);
     }
 
-    public Users unblockUser(Integer id) throws UserSelfException {
+    public UserDTO unblockUser(Integer id) throws UserSelfException {
         Users targetUser = getTargetUser(id);
 
         targetUser.setStatus(Status.UNBLOCKED);
-        return userRepository.save(targetUser);
+        userRepository.save(targetUser);
+        return userMapper.toUserDTO(targetUser);
     }
 
     public void checkBlocking(Integer id) throws Exception{
@@ -107,25 +109,30 @@ public class UserService {
         }
     }
 
-    public Users findByUsername(String username) {
+    public UserDTO findByUsername(String username) {
         Optional<Users> user = userRepository.findByUsername(username);
-        return user.orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
+        Users users = user.get();
+        return userMapper.toUserDTO(users);
     }
 
-    public Users findById(Integer id){
+    public UserDTO findById(Integer id){
         Optional<Users> user = userRepository.findById(id);
-        return user.orElseThrow(() -> new UsernameNotFoundException("User not found with id: " + id));
+        Users users = user.get();
+        return userMapper.toUserDTO(users);
     }
 
-    public Users updateUser(Users user){
-        return userRepository.save(user);
+    public UserDTO updateUser(Users user){
+        userRepository.save(user);
+        return userMapper.toUserDTO(user);
     }
 
-    public Users updateLimitNews(Integer id, Integer newLimit){
+
+    public UserDTO updateLimitNews(Integer id, Integer newLimit){
         Users user = userRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Такой пользователь не найден!"));
 
         user.setLimitNews(newLimit);
-        return userRepository.save(user);
+        userRepository.save(user);
+        return userMapper.toUserDTO(user);
     }
 
     public UserDTO updateRole(Integer id, String updateRole){
@@ -136,12 +143,7 @@ public class UserService {
 
         Users userUpd = userRepository.save(user);
 
-        return new UserDTO(
-                userUpd.getId(),
-                userUpd.getUsername(),
-                userUpd.getGmail(),
-                null
-        );
+        return userMapper.toUserDTO(userUpd);
     }
 
     public List<UserDTO> getAllUser(){
@@ -149,15 +151,6 @@ public class UserService {
         List<Users> usersList = new ArrayList<>();
         usersList.addAll(users);
 
-        return usersList
-                .stream()
-                .map(user -> new UserDTO(
-                        user.getId(),
-                        user.getUsername(),
-                        user.getGmail(),
-                        null
-
-                ))
-                .collect(Collectors.toList());
+        return userMapper.toUserDTOList(usersList);
     }
 }

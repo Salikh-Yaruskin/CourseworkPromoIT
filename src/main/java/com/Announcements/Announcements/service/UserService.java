@@ -10,6 +10,7 @@ import com.Announcements.Announcements.mapper.UserMapper;
 import com.Announcements.Announcements.model.Status;
 import com.Announcements.Announcements.model.Users;
 import com.Announcements.Announcements.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -25,19 +26,14 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 @Service
+@RequiredArgsConstructor
 public class UserService {
 
-    @Autowired
-    private UserRepository userRepository;
-    private BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder(12);
-
-    @Autowired
-    private UserMapper userMapper;
-
-    @Autowired
-    AuthenticationManager authenticationManager;
-    @Autowired
-    private JWTService jwtService;
+    private final UserRepository userRepository;
+    private final BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder(12);
+    private final UserMapper userMapper;
+    private final AuthenticationManager authenticationManager;
+    private final JWTService jwtService;
 
     public UserCreateDTO register(UserCreateDTO userCreateDTO) {
         if (userCreateDTO.password() == null || userCreateDTO.password().isEmpty()) {

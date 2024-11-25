@@ -17,6 +17,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
@@ -26,24 +27,15 @@ import java.util.List;
 import java.util.Objects;
 
 @RestController
+@RequiredArgsConstructor
 public class UserController {
 
-    @Autowired
-    private UserService userService;
-
-    @Autowired
-    private NewsService newsService;
-
-    @Autowired
-    private EmailService emailService;
-
-    @Autowired
-    private CaptchaService captchaService;
-
-    @Autowired
-    private UserMapper userMapper;
-    @Autowired
-    private NewsMapper newsMapper;
+    private final UserService userService;
+    private final NewsService newsService;
+    private final EmailService emailService;
+    private final CaptchaService captchaService;
+    private final UserMapper userMapper;
+    private final NewsMapper newsMapper;
 
     @Operation(
             summary = "Регистрация нового пользователя",

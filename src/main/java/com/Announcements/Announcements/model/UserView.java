@@ -1,9 +1,13 @@
 package com.Announcements.Announcements.model;
 
 import jakarta.persistence.*;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "user_view")
+@Data
+@NoArgsConstructor
 public class UserView {
 
     @Id
@@ -19,31 +23,8 @@ public class UserView {
     @JoinColumn(name = "news_id", nullable = false)
     private News news;
 
-    public UserView() {
-    }
-
     public UserView(Users user, News news) {
         this.user = user;
-        this.news = news;
-    }
-
-    public Integer getId() {
-        return id;
-    }
-
-    public Users getUser() {
-        return user;
-    }
-
-    public void setUser(Users user) {
-        this.user = user;
-    }
-
-    public News getNews() {
-        return news;
-    }
-
-    public void setNews(News news) {
         this.news = news;
     }
 }

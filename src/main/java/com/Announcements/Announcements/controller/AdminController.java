@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,16 +22,12 @@ import java.util.List;
 import java.util.NoSuchElementException;
 
 @RestController
+@RequiredArgsConstructor
 public class AdminController {
 
-    @Autowired
-    private UserService userService;
-
-    @Autowired
-    private NewsService newsService;
-
-    @Autowired
-    private NewsMapper newsMapper;
+    private final UserService userService;
+    private final NewsService newsService;
+    private final NewsMapper newsMapper;
 
     @Operation(
             summary = "Редактирование объявления",

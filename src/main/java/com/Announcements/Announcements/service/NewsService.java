@@ -14,6 +14,7 @@ import com.Announcements.Announcements.repository.NewsRepository;
 import com.Announcements.Announcements.repository.UserRepository;
 import com.Announcements.Announcements.repository.UserViewRepository;
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -29,25 +30,14 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 @Service
+@RequiredArgsConstructor
 public class NewsService {
-    @Autowired
-    private NewsRepository newsRepository;
-    @Autowired
-    private UserService userService;
-    @Autowired
-    private UserRepository userRepository;
-    @Autowired
-    private UserViewRepository userViewRepository;
-
-    @Autowired
-    private UserMapper userMapper;
-    @Autowired
-    private NewsMapper newsMapper;
-
-    public NewsService(NewsRepository newsRepository, UserService userService) {
-        this.newsRepository = newsRepository;
-        this.userService = userService;
-    }
+    private final NewsRepository newsRepository;
+    private final UserService userService;
+    private final UserRepository userRepository;
+    private final UserViewRepository userViewRepository;
+    private final UserMapper userMapper;
+    private final NewsMapper newsMapper;
 
     public List<NewsDTO> getNewsUser(Integer newsId) {
         if (Objects.equals(newsId, 0L)) {
@@ -156,7 +146,7 @@ public class NewsService {
     }
 
     public NewsDTO updateNews(News news) {
-        if (news == null || news.getId() == null) {
+        if (news == null || news.getId() == 0) {
             throw new IllegalArgumentException("Новость не найдена или некорректна.");
         }
         return newsMapper.toNewsDTO(news);

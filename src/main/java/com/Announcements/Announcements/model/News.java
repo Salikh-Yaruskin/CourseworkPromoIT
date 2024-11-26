@@ -9,16 +9,22 @@ import java.time.LocalDateTime;
 
 @Entity
 @Data
+@Table(name = "news")
 @NoArgsConstructor
 public class News {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
-    String name;
-    String description;
+    @Column
+    private String name;
+    @Column
+    private String description;
     @ManyToOne
+    @JoinColumn(name = "user_id", nullable = false)
     private Users user;
     @Column(name = "view_count", nullable = false)
     private Integer ViewCount;
+    @Column
     private Status status;
     @Column(name = "created_at")
     private LocalDateTime createdAt;

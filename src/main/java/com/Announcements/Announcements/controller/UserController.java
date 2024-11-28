@@ -1,10 +1,9 @@
 package com.Announcements.Announcements.controller;
 
 import com.Announcements.Announcements.MyException.CaptchaException;
-import com.Announcements.Announcements.dto.CreateNewsDTO;
-import com.Announcements.Announcements.dto.LoginDTO;
-import com.Announcements.Announcements.dto.NewsDTO;
-import com.Announcements.Announcements.dto.UserDTO;
+import com.Announcements.Announcements.dto.*;
+import com.Announcements.Announcements.mapper.NewsMapper;
+import com.Announcements.Announcements.mapper.UserMapper;
 import com.Announcements.Announcements.model.News;
 import com.Announcements.Announcements.model.Status;
 import com.Announcements.Announcements.model.Users;
@@ -18,6 +17,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
@@ -27,19 +27,15 @@ import java.util.List;
 import java.util.Objects;
 
 @RestController
+@RequiredArgsConstructor
 public class UserController {
 
-    @Autowired
-    private UserService userService;
-
-    @Autowired
-    private NewsService newsService;
-
-    @Autowired
-    private EmailService emailService;
-
-    @Autowired
-    private CaptchaService captchaService;
+    private final UserService userService;
+    private final NewsService newsService;
+    private final EmailService emailService;
+    private final CaptchaService captchaService;
+    private final UserMapper userMapper;
+    private final NewsMapper newsMapper;
 
     @Operation(
             summary = "Регистрация нового пользователя",
@@ -51,8 +47,8 @@ public class UserController {
             }
     )
     @PostMapping("/register")
-    public UserDTO register(@RequestBody UserDTO userDTO){
-        return userService.register(userDTO);
+    public UserCreateDTO register(@RequestBody UserCreateDTO userCreateDTO){
+        return userService.register(userCreateDTO);
     }
 
     @Operation(
@@ -85,21 +81,12 @@ public class UserController {
         }
 
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        Users user = userService.findByUsername(username);
+        UserDTO user = userService.findByUsername(username);
 
         News news = new News(newsDto);
-        news.setUser(user);
-        News createdNews = newsService.addNews(news);
+        news.setUser(userMapper.fromUserDto(user));
 
-        return new NewsDTO(
-                createdNews.getId(),
-                createdNews.getName(),
-                createdNews.getDescription(),
-                createdNews.getUser().getUsername(),
-                createdNews.getUser().getGmail(),
-                createdNews.getViewCount(),
-                createdNews.getStatus()
-        );
+        return newsService.addNews(news);
     }
 
     @Operation(
@@ -151,11 +138,11 @@ public class UserController {
     public List<NewsDTO> getNewsUser() {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
 
-        Users user = userService.findByUsername(username);
+        UserDTO user = userService.findByUsername(username);
         if (user == null) {
             return List.of();
         }
-        return newsService.getNewsByUserId(user.getId());
+        return newsService.getNewsByUserId(userMapper.fromUserDto(user).getId());
     }
 
     @Operation(
@@ -170,24 +157,15 @@ public class UserController {
     @PutMapping("/user/my-news/status/{id}")
     public NewsDTO updateStatusNews(@PathVariable Integer id, @RequestBody Status updatedNewsStatus) throws Exception {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        Users user = userService.findByUsername(username);
+        UserDTO user = userService.findByUsername(username);
 
         NewsDTO existingNews = newsService.getNews(id, username);
 
-        if (existingNews == null || !Objects.equals(existingNews.username(), user.getUsername())) {
+        if (existingNews == null || !Objects.equals(existingNews.username(), userMapper.fromUserDto(user).getUsername())) {
             throw new IllegalArgumentException("Вы не можете редактировать эту новость.");
         }
 
-        News updatedNews = newsService.updateNews(id, updatedNewsStatus);
-        return new NewsDTO(
-                updatedNews.getId(),
-                updatedNews.getName(),
-                updatedNews.getDescription(),
-                updatedNews.getUser().getUsername(),
-                updatedNews.getUser().getGmail(),
-                updatedNews.getViewCount(),
-                updatedNews.getStatus()
-        );
+        return newsService.updateNews(id, updatedNewsStatus);
     }
 }
 

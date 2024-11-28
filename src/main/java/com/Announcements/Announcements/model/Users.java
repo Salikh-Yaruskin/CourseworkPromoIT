@@ -1,98 +1,44 @@
 package com.Announcements.Announcements.model;
 
-import com.Announcements.Announcements.dto.LoginDTO;
 import com.Announcements.Announcements.dto.UserDTO;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
-
-import java.util.List;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Entity
+@Table(name = "users")
+@Data
+@NoArgsConstructor
+@Schema(description = "Основная сущносить пользователя")
 public class Users {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Schema(description = "Уникальный id пользователя", example = "15")
     private int id;
+    @Schema(description = "Имя пользователя", example = "ivan")
+    @Column
     private String username;
+    @Schema(description = "Почта пользователя", example = "ivan@gmail.com")
+    @Column
     private String gmail;
+    @Schema(description = "Пароль", example = "ivan")
+    @Column
     private String password;
+    @Schema(description = "Роль пользователя", allowableValues = {"USER", "ADMIN"})
+    @Column
     private String role;
+    @Schema(description = "Статус пользователя")
+    @Column
     private Status status;
+    @Schema(description = "Количество доступных публикаций в день", example = "5")
+    @Column(name = "limit_news")
     private Integer limitNews = 5;
-
-    public Users(){
-
-    }
 
     public Users(UserDTO userDTO) {
         this.id = userDTO.id();
         this.username = userDTO.username();
         this.gmail = userDTO.gmail();
-        this.password = userDTO.password();
         this.limitNews = 5;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public String getGmail() { return gmail;}
-
-    public void setGmail(String gmail) {
-        this.gmail = gmail;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public Integer getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public String getRole() {
-        return role;
-    }
-
-    public void setRole(String role) {
-        this.role = role;
-    }
-
-    public Status getStatus() {
-        return status;
-    }
-
-    public void setStatus(Status status) {
-        this.status = status;
-    }
-
-    public Integer getLimitNews() {
-        return limitNews;
-    }
-
-    public void setLimitNews(Integer limitNews) {
-        this.limitNews = limitNews;
-    }
-
-    @Override
-    public String toString() {
-        return "Users{" +
-                "id=" + id +
-                ", username='" + username + '\'' +
-                ", gmail='" + gmail + '\'' +
-                ", password='" + password + '\'' +
-                ", role='" + role + '\'' +
-                ", status='" + status + '\'' +
-                ", limitNews='" + limitNews + '\'' +
-                '}';
     }
 }

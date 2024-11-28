@@ -37,7 +37,12 @@ public class ControllerExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     @ExceptionHandler(CaptchaException.class)
-    public ResponseEntity<String> handleUnlimitedException(CaptchaException e){
+    public ResponseEntity<String> handleCaptchaException(CaptchaException e){
         return new ResponseEntity<>(e.getMessage(), HttpStatus.TOO_MANY_REQUESTS);
+    }
+
+    @ExceptionHandler(BlockedException.class)
+    public ResponseEntity<String> handlerBlockedException(BlockedException e){
+        return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
     }
 }

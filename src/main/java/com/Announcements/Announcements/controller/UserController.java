@@ -18,6 +18,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
@@ -26,6 +29,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Objects;
 
+@Slf4j
 @RestController
 @RequiredArgsConstructor
 public class UserController {
@@ -38,33 +42,6 @@ public class UserController {
     private final NewsMapper newsMapper;
 
     @Operation(
-            summary = "Регистрация нового пользователя",
-            description = "Позволяет зарегистрировать нового пользователя в системе",
-            responses = {
-                    @ApiResponse(description = "Успешная регистрация", responseCode = "200",
-                            content = @Content(schema = @Schema(implementation = UserDTO.class))),
-                    @ApiResponse(description = "Ошибка валидации или регистрация не удалась", responseCode = "400")
-            }
-    )
-    @PostMapping("/register")
-    public UserCreateDTO register(@RequestBody UserCreateDTO userCreateDTO){
-        return userService.register(userCreateDTO);
-    }
-
-    @Operation(
-            summary = "Авторизация пользователя",
-            description = "Позволяет авторизовать пользователя по логину и паролю",
-            responses = {
-                    @ApiResponse(description = "Успешная авторизация", responseCode = "200"),
-                    @ApiResponse(description = "Неверные данные авторизации", responseCode = "401")
-            }
-    )
-    @PostMapping("/login")
-    public String login(@RequestBody LoginDTO loginDTO){
-        return userService.verify(loginDTO);
-    }
-
-    @Operation(
             summary = "Создание новости с проверкой reCaptcha",
             description = "Позволяет авторизованным пользователям создать новость. Для создания новости необходимо пройти проверку reCaptcha. Используйте тестовый ключ: test-captcha-token.",
             responses = {
@@ -74,19 +51,21 @@ public class UserController {
                     @ApiResponse(description = "Пользователь не авторизован", responseCode = "401")
             }
     )
-    @PostMapping("/user/create-news")
+    @PostMapping("/api/v1/users/create-news")
     public NewsDTO addNews(@RequestBody CreateNewsDTO newsDto, @RequestHeader("g-recaptcha-response") String captchaResponse) throws Exception {
         if (!captchaService.validateCaptcha(captchaResponse)) {
+            log.error("Captcha не пройдена!");
             throw new CaptchaException("Captcha validation failed.");
         }
-
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         UserDTO user = userService.findByUsername(username);
+        log.info("{} создает новую новость: {}", username,newsDto.name());
 
         News news = new News(newsDto);
         news.setUser(userMapper.fromUserDto(user));
-
-        return newsService.addNews(news);
+        NewsDTO newsDTO = newsService.addNews(news);
+        log.info("Новость успешно создана: {} пользователем {}", newsDto.name(), username);
+        return newsDTO;
     }
 
     @Operation(
@@ -98,21 +77,26 @@ public class UserController {
                     @ApiResponse(description = "Попытка отправить сообщение на свою новость", responseCode = "400")
             }
     )
-    @PostMapping("/user/news/{id}/send-email")
+    @PostMapping("/api/v1/users/news/{id}/send-email")
     public String sendEmailToAuthor(@PathVariable Integer id, @RequestBody String message) throws Exception {
+        log.info("Отправка письма для новости ID: {}", id);
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        NewsDTO newsDto  = newsService.getNews(id, username);
+        NewsDTO newsDto  = newsService.getSimpleNews(id, username);
         if (newsDto == null) {
+            log.warn("Новость с id={}, которую хочет прокомментировать пользователь, не найдена(", id);
             return "Новость не найдена";
         }
 
         String author = newsDto.username();
         String gmail = newsDto.gmail();
         if (author == null || gmail == null) {
+            log.warn("Пользователь пытается отправить комментарий " +
+                    "на не корректных пользователя = {} или почту = {}", author, gmail);
             return "Автор не верный или почта не верна!";
         }
 
         if (newsDto.username().equals(username)) {
+            log.warn("Пользователь {} пытается отправить сообщение на свою новость", username);
             return "Вы не можете комментировать свои новости!";
         }
 
@@ -122,7 +106,7 @@ public class UserController {
                 message,
                 username
         );
-
+        log.info("Письмо отправлено автору новости id={} от пользователя {}", id, username);
         return "Письмо отправлено: " + username;
     }
 
@@ -134,15 +118,17 @@ public class UserController {
                     @ApiResponse(description = "Пользователь не найден", responseCode = "404")
             }
     )
-    @GetMapping("/user/my-news")
+    @GetMapping("/api/v1/users/my-news")
     public List<NewsDTO> getNewsUser() {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
-
+        log.info("Получение списка новостей для пользователя: {}", username);
         UserDTO user = userService.findByUsername(username);
         if (user == null) {
             return List.of();
         }
-        return newsService.getNewsByUserId(userMapper.fromUserDto(user).getId());
+        List<NewsDTO> listDto = newsService.getNewsByUserId(userMapper.fromUserDto(user).getId());
+        log.info("Пользователь {} получил {} новостей.", username, listDto.size());
+        return listDto;
     }
 
     @Operation(
@@ -154,18 +140,24 @@ public class UserController {
                     @ApiResponse(description = "Пользователь не может редактировать чужие новости", responseCode = "403")
             }
     )
-    @PutMapping("/user/my-news/status/{id}")
+    @PutMapping("/api/v1/users/my-news/status/{id}")
     public NewsDTO updateStatusNews(@PathVariable Integer id, @RequestBody Status updatedNewsStatus) throws Exception {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         UserDTO user = userService.findByUsername(username);
+        log.info("Пользователь {} изменяет статус новости id={} на {}", username, id, updatedNewsStatus);
 
-        NewsDTO existingNews = newsService.getNews(id, username);
+        NewsDTO existingNews = newsService.getSimpleNews(id, username);
 
-        if (existingNews == null || !Objects.equals(existingNews.username(), userMapper.fromUserDto(user).getUsername())) {
+        if (Objects.isNull(existingNews) || !Objects.equals(existingNews.username(), userMapper.fromUserDto(user).getUsername())) {
+            log.warn("Попытка редактирования чужой новости. Пользователь {} пытался редактировать новость автора {}.",
+                    user.username(),
+                    existingNews.username());
             throw new IllegalArgumentException("Вы не можете редактировать эту новость.");
         }
 
-        return newsService.updateNews(id, updatedNewsStatus);
+        NewsDTO newsDTO = newsService.updateNews(id, updatedNewsStatus);
+        log.info("Новость id={} успешно обновлена пользователем {}", id, username);
+        return newsDTO;
     }
 }
 

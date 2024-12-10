@@ -15,5 +15,6 @@ public interface NewsMapper {
     @Mapping(target = "username", source = "user.username")
     @Mapping(target = "gmail", source = "user.gmail")
     NewsDTO toNewsDTO(News news);
+
     List<NewsDTO> toNewsDTOList(List<News> news);
 }

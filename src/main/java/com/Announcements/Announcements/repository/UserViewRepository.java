@@ -11,6 +11,8 @@ import java.util.Optional;
 
 @Repository
 public interface UserViewRepository extends JpaRepository<UserView, Integer> {
+
     Optional<UserView> findByUserAndNews(Users user, News news);
+
     List<UserView> findAllByNews(News news);
 }

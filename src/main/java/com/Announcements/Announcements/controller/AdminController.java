@@ -5,6 +5,7 @@ import com.Announcements.Announcements.dto.NewsDTO;
 import com.Announcements.Announcements.dto.RoleDTO;
 import com.Announcements.Announcements.dto.UpdateNewsDTO;
 import com.Announcements.Announcements.dto.UserDTO;
+import com.Announcements.Announcements.mapper.NewsMapper;
 import com.Announcements.Announcements.model.News;
 import com.Announcements.Announcements.model.Users;
 import com.Announcements.Announcements.service.NewsService;
@@ -13,20 +14,22 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.NoSuchElementException;
 
+@Slf4j
 @RestController
+@RequiredArgsConstructor
 public class AdminController {
 
-    @Autowired
-    private UserService userService;
-
-    @Autowired
-    private NewsService newsService;
+    private final UserService userService;
+    private final NewsService newsService;
+    private final NewsMapper newsMapper;
 
     @Operation(
             summary = "Редактирование объявления",
@@ -37,27 +40,20 @@ public class AdminController {
                     @ApiResponse(description = "Новость не найдена", responseCode = "404")
             }
     )
-    @PutMapping("/admin/all-news/{id}")
+    @PutMapping("/api/v1/admins/news/{id}")
     public NewsDTO updateAdminNews(@PathVariable Integer id, @RequestBody UpdateNewsDTO updateNewsDto) {
+        log.info("Администратор запрашивает редактирование новости ID: {}", id);
         News news = newsService.getNews(id);
         if (news == null) {
+            log.warn("Новость с ID {} не найдена.", id);
             throw new NoSuchElementException("Нет такой новости!");
         }
-
+        log.info("Обновление новости ID: {} с новыми данными: {}", id, updateNewsDto);
         news.setName(updateNewsDto.name());
         news.setDescription(updateNewsDto.description());
-
-        News updatedNews = newsService.updateNews(news);
-
-        return new NewsDTO(
-                updatedNews.getId(),
-                updatedNews.getName(),
-                updatedNews.getDescription(),
-                updatedNews.getUser().getUsername(),
-                updatedNews.getUser().getGmail(),
-                updatedNews.getViewCount(),
-                updatedNews.getStatus()
-        );
+        NewsDTO updatedNews = newsService.updateNews(news);
+        log.info("Новость с ID: {} успешно обновлена.", id);
+        return updatedNews;
     }
 
     @Operation(
@@ -69,25 +65,19 @@ public class AdminController {
                     @ApiResponse(description = "Новость не найдена", responseCode = "404")
             }
     )
-    @DeleteMapping("/admin/news/{id}")
+    @DeleteMapping("/api/v1/admins/news/{id}")
     public NewsDTO deleteNews(@PathVariable Integer id) {
+        log.info("Администратор запрашивает удаление новости ID: {}", id);
         News news = newsService.getNews(id);
         if (news == null) {
+            log.warn("Новость с ID {} не найдена.", id);
             throw new NoSuchElementException("Нет такой новости!");
         }
 
-        NewsDTO deletedNewsDTO = new NewsDTO(
-                news.getId(),
-                news.getName(),
-                news.getDescription(),
-                news.getUser().getUsername(),
-                news.getUser().getGmail(),
-                news.getViewCount(),
-                news.getStatus()
-        );
+        NewsDTO deletedNewsDTO = newsMapper.toNewsDTO(news);
 
         newsService.deleteNews(id);
-
+        log.info("Новость с ID: {} успешно удалена.", id);
         return deletedNewsDTO;
     }
 
@@ -101,10 +91,13 @@ public class AdminController {
                     @ApiResponse(description = "Пользователь не найден", responseCode = "404")
             }
     )
-    @PutMapping("/admin/user-blocked/{id}")
-    public String blockedUser(@PathVariable Integer id, @RequestBody Users blockedUser) throws UserSelfException {
-        userService.blockUser(id);
-        return blockedUser.getUsername() + ":" + blockedUser.getStatus() ;
+    @PutMapping("/api/v1/admins/users/{id}/blocked")
+    public String blockedUser(@PathVariable Integer id) throws UserSelfException {
+        log.info("Администратор запрашивает блокировку пользователя ID: {}", id);
+        UserDTO userDTO = userService.blockUser(id);
+        String username = userDTO.username();
+        log.info("Пользователь с ID: {} успешно заблокирован.", id);
+        return username;
     }
 
     @Operation(
@@ -117,10 +110,13 @@ public class AdminController {
                     @ApiResponse(description = "Пользователь не найден", responseCode = "404")
             }
     )
-    @PutMapping("/admin/user-unblocked/{id}")
-    public String unblockedUser(@PathVariable Integer id, @RequestBody Users unBlockedUser) throws UserSelfException {
-        userService.unblockUser(id);
-        return unBlockedUser.getUsername() + ":" + unBlockedUser.getStatus() ;
+    @PutMapping("/api/v1/admins/users/{id}/unblocked")
+    public String unblockedUser(@PathVariable Integer id) throws UserSelfException {
+        log.info("Администратор запрашивает разблокировку пользователя ID: {}", id);
+        UserDTO userDTO = userService.unblockUser(id);
+        String username = userDTO.username();
+        log.info("Пользователь с ID: {} успешно разблокирован.", id);
+        return username;
     }
 
     @Operation(
@@ -132,16 +128,12 @@ public class AdminController {
                     @ApiResponse(description = "Пользователь не найден", responseCode = "404")
             }
     )
-    @PutMapping("/admin/user-limit/{id}")
-    public Integer userLimit(@PathVariable Integer id, @RequestBody Integer updateLimit) {
-        Users user = userService.findById(id);
-        if (user == null) {
-            throw new NoSuchElementException("Нет такого пользователя!");
-        }
-
-        user.setLimitNews(updateLimit);
-        userService.updateUser(user);
-        return user.getLimitNews();
+    @PutMapping("/api/v1/admins/users/{id}/limits")
+    public UserDTO userLimit(@PathVariable Integer id, @RequestBody Integer updateLimit) {
+        log.info("Администратор устанавливает лимит на количество объявлений для пользователя ID: {}. Новый лимит: {}", id, updateLimit);
+        UserDTO userDTO = userService.updateLimitNews(id, updateLimit);
+        log.info("Лимит для пользователя ID: {} успешно обновлен на {}.", id, updateLimit);
+        return userDTO;
     }
 
     @Operation(
@@ -152,9 +144,12 @@ public class AdminController {
                             content = @Content(schema = @Schema(implementation = NewsDTO.class)))
             }
     )
-    @GetMapping("/admin/news-archive")
+    @GetMapping("/api/v1/admin/archives")
     public List<NewsDTO> getArchive() {
-        return newsService.getArchive();
+        log.info("Администратор запрашивает просмотр архива объявлений.");
+        List<NewsDTO> archive = newsService.getArchive();
+        log.info("Администратор получил {} архивных объявлений.", archive.size());
+        return archive;
     }
 
     @Operation(
@@ -166,9 +161,12 @@ public class AdminController {
                     @ApiResponse(description = "Пользователь не найден", responseCode = "404")
             }
     )
-    @PutMapping("/admin/user-role/{id}")
+    @PutMapping("/api/v1/admins/users/{id}/role")
     public UserDTO updateUserRole(@PathVariable Integer id, @RequestBody RoleDTO roleDTO) {
-        return userService.updateRole(id, roleDTO.role());
+        log.info("Администратор назначает новую роль для пользователя ID: {}. Новая роль: {}", id, roleDTO.role());
+        UserDTO userDTO = userService.updateRole(id, roleDTO.role());
+        log.info("Роль для пользователя ID: {} успешно обновлена на {}.", id, roleDTO.role());
+        return userDTO;
     }
 
     @Operation(
@@ -179,9 +177,12 @@ public class AdminController {
                             content = @Content(schema = @Schema(implementation = UserDTO.class)))
             }
     )
-    @GetMapping("/admin/all-user")
+    @GetMapping("/api/v1/admin/users")
     public List<UserDTO> getAllUser() {
-        return userService.getAllUser();
+        log.info("Администратор запрашивает список всех пользователей.");
+        List<UserDTO> users = userService.getAllUser();
+        log.info("Администратор получил список из {} пользователей.", users.size());
+        return users;
     }
 }
 

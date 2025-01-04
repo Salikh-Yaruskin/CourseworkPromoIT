@@ -14,9 +14,9 @@ import java.util.Optional;
 
 @Service
 public class MyUserDetailsService implements UserDetailsService {
+
     @Autowired
     private UserRepository repository;
-
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -37,6 +37,7 @@ public class MyUserDetailsService implements UserDetailsService {
         if (user.getRole() == null) {
             return new String[]{"USER"};
         }
-        return user.getRole().split(",");
+        return new String[]{user.getRole().name()};
     }
+
 }

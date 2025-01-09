@@ -50,8 +50,8 @@ public class NewsService {
             log.info("Получены все новости ({} записей)", list.size());
             return newsMapper.toNewsDTOList(list);
         }
-        List<News> list_id = newsRepository.findAllByUserId(newsId);
-        return newsMapper.toNewsDTOList(list_id);
+        List<News> listId = newsRepository.findAllByUserId(newsId);
+        return newsMapper.toNewsDTOList(listId);
     }
 
     public List<NewsDTO> getAll() {

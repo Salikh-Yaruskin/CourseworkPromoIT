@@ -8,6 +8,7 @@ import com.Announcements.Announcements.dto.UserDTO;
 import com.Announcements.Announcements.mapper.NewsMapper;
 import com.Announcements.Announcements.model.News;
 import com.Announcements.Announcements.model.Users;
+import com.Announcements.Announcements.service.AuthServiceClient;
 import com.Announcements.Announcements.service.NewsService;
 import com.Announcements.Announcements.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -17,7 +18,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -30,6 +33,7 @@ public class AdminController {
     private final UserService userService;
     private final NewsService newsService;
     private final NewsMapper newsMapper;
+    private final AuthServiceClient authServiceClient;
 
     @Operation(
             summary = "Редактирование объявления",
@@ -180,7 +184,7 @@ public class AdminController {
     @GetMapping("/api/v1/admin/users")
     public List<UserDTO> getAllUser() {
         log.info("Администратор запрашивает список всех пользователей.");
-        List<UserDTO> users = userService.getAllUser();
+        List<UserDTO> users = authServiceClient.getAllUsers();
         log.info("Администратор получил список из {} пользователей.", users.size());
         return users;
     }

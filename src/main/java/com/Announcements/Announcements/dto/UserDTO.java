@@ -1,7 +1,5 @@
 package com.Announcements.Announcements.dto;
 
-import com.Announcements.Announcements.model.Roles;
-import com.Announcements.Announcements.model.Status;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 @Schema(description = "Сущность Пользователя")
@@ -12,8 +10,10 @@ public record UserDTO(
         String username,
         @Schema(description = "Почта пользователя", example = "ivan@gmail.com")
         String gmail,
-        @Schema(description = "Роль пользователя")
-        Roles role,
-        @Schema(description = "Лимит по новостям")
+        @Schema(description = "Пароль")
+        String password,
+        @Schema(description = "Роль пользователя", allowableValues = {"USER", "ADMIN"})
+        String role,
+        @Schema(description = "Лимит по новостям", example = "5")
         Integer limitNews
 ) {}

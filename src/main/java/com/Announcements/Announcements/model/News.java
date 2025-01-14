@@ -27,9 +27,8 @@ public class News {
     @Column
     private String description;
 
-    @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
-    private Users user;
+    @Column(name = "user_id", nullable = false)
+    private Integer user;
 
     @Column(name = "view_count", nullable = false)
     private Integer ViewCount;

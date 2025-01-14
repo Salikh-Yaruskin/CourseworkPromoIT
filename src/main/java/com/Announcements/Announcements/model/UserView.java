@@ -15,15 +15,14 @@ public class UserView {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
-    private Users user;
+    @Column(name = "user_id", nullable = false)
+    private Integer user;
 
     @ManyToOne
     @JoinColumn(name = "news_id", nullable = false)
     private News news;
 
-    public UserView(Users user, News news) {
+    public UserView(Integer user, News news) {
         this.user = user;
         this.news = news;
     }

@@ -4,33 +4,34 @@ import com.Announcements.Announcements.MyException.BlockedException;
 import com.Announcements.Announcements.MyException.UnlimitedException;
 import com.Announcements.Announcements.dto.CreateNewsDTO;
 import com.Announcements.Announcements.dto.NewsDTO;
+import com.Announcements.Announcements.dto.UpdateNewsDTO;
 import com.Announcements.Announcements.dto.UserDTO;
 import com.Announcements.Announcements.mapper.NewsMapper;
-import com.Announcements.Announcements.mapper.UserMapper;
 import com.Announcements.Announcements.model.News;
 import com.Announcements.Announcements.model.Status;
 import com.Announcements.Announcements.model.UserView;
-import com.Announcements.Announcements.model.Users;
 import com.Announcements.Announcements.repository.NewsRepository;
-import com.Announcements.Announcements.repository.UserRepository;
 import com.Announcements.Announcements.repository.UserViewRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -38,166 +39,169 @@ import java.util.stream.StreamSupport;
 public class NewsService {
 
     private final NewsRepository newsRepository;
-    private final UserService userService;
-    private final UserRepository userRepository;
     private final UserViewRepository userViewRepository;
-    private final UserMapper userMapper;
     private final NewsMapper newsMapper;
+    private final AuthServiceClient authServiceClient;
 
-    public List<NewsDTO> getNewsUser(Integer newsId) {
-        if (Objects.equals(newsId, 0L)) {
-            List<News> list = newsRepository.findAll();
-            log.info("Получены все новости ({} записей)", list.size());
-            return newsMapper.toNewsDTOList(list);
-        }
-        List<News> listId = newsRepository.findAllByUserId(newsId);
-        return newsMapper.toNewsDTOList(listId);
-    }
-
+    // OK
     public List<NewsDTO> getAll() {
+        log.info("Получение всех новостей");
         List<News> news = newsRepository.findAll();
         List<News> ansNews = new ArrayList<>();
-        for (News a : news){
-            if(a.getStatus() == Status.UNBLOCKED){
+        for (News a : news) {
+            if (a.getStatus() == Status.UNBLOCKED) {
                 ansNews.add(a);
             }
         }
         return newsMapper.toNewsDTOList(ansNews);
     }
 
-    public List<NewsDTO> getArchive(){
+    // OK
+    public List<NewsDTO> getArchive() {
+        log.info("Получение объявлений со статусов BLOCKED");
         List<News> news = newsRepository.findAll();
         List<News> archiveNews = new ArrayList<>();
-        for (News a : news){
-            if (a.getStatus() == Status.BLOCKED){
+        for (News a : news) {
+            if (a.getStatus() == Status.BLOCKED) {
                 archiveNews.add(a);
             }
         }
         return newsMapper.toNewsDTOList(archiveNews);
     }
 
-    public NewsDTO getSimpleNews(Integer id, String username) throws Exception{
-        Optional<News> newsOptional = newsRepository.findById(id);
-
+    // OK
+    public NewsDTO getSimpleNews(Integer id) throws Exception {
         News news = newsRepository.findById(id)
                 .orElseThrow(() -> {
                     log.warn("Новость с ID {} не найдена.", id);
-                    return new NoSuchElementException("News not found with id: " + id);
+                    return new NoSuchElementException("Новость не найдена с ID: " + id);
                 });
-
-        Users user = userRepository.findByUsername(username)
-                .orElseThrow(() -> {
-                    log.warn("Пользователь {} не найден.", username);
-                    return new UsernameNotFoundException("User not found with username: " + username);
-                });
-
-        Optional<Users> userOptional = userRepository.findByUsername(username);
 
         log.info("Новость с ID: {} успешно найдена.", id);
         return newsMapper.toNewsDTO(news);
     }
 
-    public NewsDTO getNews(Integer id, String username) throws Exception{
-        Optional<News> newsOptional = newsRepository.findById(id);
-
+    // OK
+    public NewsDTO getNews(Integer id, String username) throws Exception {
         News news = newsRepository.findById(id)
                 .orElseThrow(() -> {
                     log.warn("Новость с ID {} не найдена.", id);
-                    return new NoSuchElementException("News not found with id: " + id);
+                    return new NoSuchElementException("Новость не найдена с ID: " + id);
                 });
 
-        Users user = userRepository.findByUsername(username)
-                .orElseThrow(() -> {
-                    log.warn("Пользователь {} не найден.", username);
-                    return new UsernameNotFoundException("User not found with username: " + username);
-                });
+        if (!username.isEmpty()) {
+            authServiceClient.getUserByName(username)
+                    .ifPresent(user -> {
+                        Optional<UserView> userViewOptional = userViewRepository.findByUserAndNews(user.id(), news);
 
-        Optional<UserView> userViewOptional = userViewRepository.findByUserAndNews(user, news);
+                        if (userViewOptional.isEmpty()) {
+                            news.setViewCount(news.getViewCount() + 1);
+                            newsRepository.save(news);
 
-        if (userViewOptional.isEmpty()) {
-            news.setViewCount(news.getViewCount() + 1);
-            newsRepository.save(news);
-
-            UserView userView = new UserView(user, news);
-            userViewRepository.save(userView);
-            log.info("Просмотр новости с ID {} зарегистрирован для пользователя: {}", id, username);
+                            UserView userView = new UserView(user.id(), news);
+                            userViewRepository.save(userView);
+                            log.info("Просмотр новости с ID {} зарегистрирован для пользователя: {}", id, username);
+                        }
+                    });
         }
+        log.info("Новость с ID: {} успешно найдена.", id);
         return newsMapper.toNewsDTO(news);
     }
 
-    public News getNews(Integer id) {
-        return newsRepository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("Not found news with id: " + id));
+    public NewsDTO getNews(Integer id) {
+        return newsMapper.toNewsDTO(newsRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Новость не найдена с ID: " + id)));
     }
 
     public List<NewsDTO> getNewsByUserId(Integer userId) {
-        List<News> news = newsRepository.findAllByUserId(userId);
+        log.info("Получение объявлений пользователя с ID: {}", userId);
+        List<News> news = newsRepository.findAllByUser(userId);
         return newsMapper.toNewsDTOList(news);
     }
 
     @Transactional
-    public NewsDTO addNews(News news) throws Exception {
-        if (news == null) {
+    public NewsDTO addNews(CreateNewsDTO newsDto) throws Exception {
+        log.info("Добавление новости: {}", newsDto.name());
+        if (newsDto == null) {
             log.error("Попытка добавить пустую новость.");
             throw new IllegalArgumentException("Entity is null");
         }
 
+        News news = new News(newsDto);
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        UserDTO user = userService.findByUsername(username);
+        Optional<UserDTO> userOpt = authServiceClient.getUserByName(username);
+        UserDTO user = userOpt.get();
 
         LocalDateTime startOfDay = LocalDateTime.now().toLocalDate().atStartOfDay();
         LocalDateTime endOfDay = LocalDateTime.now().toLocalDate().atTime(LocalTime.MAX);
 
-        List<News> todayAnnouncements = newsRepository.findAllByUserIdAndCreatedAtBetween(userMapper.fromUserDto(user).getId(), startOfDay, endOfDay);
+        List<News> todayAnnouncements = newsRepository.findAllByUserIdAndCreatedAtBetween(user.id(), startOfDay, endOfDay);
         int todayAnnouncementsCount = todayAnnouncements.size();
 
-        if (todayAnnouncementsCount >= userMapper.fromUserDto(user).getLimitNews()) {
-            log.warn("Превышен лимит новостей для пользователя {}: {}", username, userMapper.fromUserDto(user).getLimitNews());
-            throw new UnlimitedException("Вы не можете публиковать больше " + userMapper.fromUserDto(user).getLimitNews() + " объявлений в день");
+        if (todayAnnouncementsCount >= user.limitNews()) {
+            log.warn("Превышен лимит новостей для пользователя {}: {}", username, user.limitNews());
+            throw new UnlimitedException("Вы не можете публиковать больше " + user.limitNews() + " объявлений в день");
         }
 
-        userService.checkBlocking(userMapper.fromUserDto(user).getId());
+        try {
+            authServiceClient.checkUser(user.id());
+        } catch (Exception e) {
+            throw new BlockedException(e.getMessage());
+        }
 
-        news.setUser(userMapper.fromUserDto(user));
+
+        news.setUser(user.id());
         news.setCreatedAt(LocalDateTime.now());
         newsRepository.save(news);
+        log.info("Новость успешно добавлена: {}", newsDto.name());
         return newsMapper.toNewsDTO(news);
     }
 
     public NewsDTO updateNews(Integer id, Status status) throws Exception {
-
+        log.info("Обновление новости ID: {} с новым статусом: {}", id, status);
         News news = newsRepository.findById(id)
-                .orElseThrow(() ->{
+                .orElseThrow(() -> {
                     log.warn("Новость с ID {} не найдена.", id);
                     return new NoSuchElementException("News not found with id: " + id);
                 });
         news.setStatus(status);
         newsRepository.save(news);
+        log.info("Статус новости {} успешно изменен на {}", id, status);
         return newsMapper.toNewsDTO(news);
     }
 
-    public NewsDTO updateNews(News news) {
-        if (news == null || news.getId() == 0) {
-            throw new IllegalArgumentException("Новость не найдена или некорректна.");
+    public NewsDTO updateNews(UpdateNewsDTO newNews, Integer id) throws Exception {
+        log.info("Обновление новости ID: {} с новыми данными: {}", id, newNews);
+        Optional<News> newsOptional = newsRepository.findById(id);
+        if (newsOptional.isEmpty()) {
+            log.warn("Новость с ID {} не найдена.", id);
+            throw new NoSuchElementException("Нет такой новости!");
         }
+        log.info("Обновление новости ID: {} с новыми данными: {}", id, newNews);
+        News news = newsOptional.get();
+        news.setName(newNews.name());
+        news.setDescription(newNews.description());
+        newsRepository.save(news);
+        log.info("Новость с ID: {} успешно обновлена.", id);
         return newsMapper.toNewsDTO(news);
     }
 
-    public void deleteNews(Integer id){
-
+    public NewsDTO deleteNews(Integer id) {
+        log.info("Удаление новости ID: {}", id);
         News news = newsRepository.findById(id)
                 .orElseThrow(() -> {
-                   log.warn("Новость с ID {} не найдена.", id);
-                   return new NoSuchElementException("News not found with id: " + id);
+                    log.warn("Новость с ID {} не найдена.", id);
+                    return new NoSuchElementException("Новость не найдена с ID: " + id);
                 });
 
         List<UserView> userViews = userViewRepository.findAllByNews(news);
         userViewRepository.deleteAll(userViews);
-
         newsRepository.deleteById(id);
+        log.info("Новость с ID: {} успешно удалена.", id);
+        return newsMapper.toNewsDTO(news);
     }
 
-    public Page<NewsDTO> findNewsWithPagination(int offset, int size){
+    public Page<NewsDTO> findNewsWithPagination(int offset, int size) {
+        log.info("Получение объявлений с пагинацией");
         Pageable pageable = PageRequest.of(offset, size);
 
         Page<News> newsPage = newsRepository.findAll(pageable);

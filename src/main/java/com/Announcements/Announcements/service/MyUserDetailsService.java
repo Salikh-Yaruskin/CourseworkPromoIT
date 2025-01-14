@@ -1,8 +1,7 @@
 package com.Announcements.Announcements.service;
 
-import com.Announcements.Announcements.model.UserPrincipal;
-import com.Announcements.Announcements.model.Users;
-import com.Announcements.Announcements.repository.UserRepository;
+import com.Announcements.Announcements.dto.UserDTO;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -12,20 +11,22 @@ import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 
+@Slf4j
 @Service
 public class MyUserDetailsService implements UserDetailsService {
 
     @Autowired
-    private UserRepository repository;
+    private AuthServiceClient authServiceClient;
+
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        Optional<Users> user = repository.findByUsername(username);
+        Optional<UserDTO> user = authServiceClient.getUserByName(username);
         if (user.isPresent()) {
             var userObj = user.get();
             return User.builder()
-                    .username(userObj.getUsername())
-                    .password(userObj.getPassword())
+                    .username(userObj.username())
+                    .password(userObj.password())
                     .roles(getRoles(userObj))
                     .build();
         } else {
@@ -33,11 +34,11 @@ public class MyUserDetailsService implements UserDetailsService {
         }
     }
 
-    private String[] getRoles(Users user) {
-        if (user.getRole() == null) {
-            return new String[]{"USER"};
+    private String getRoles(UserDTO user) {
+        if (user.role() == null) {
+            return "USER";
         }
-        return new String[]{user.getRole().name()};
+        return user.role();
     }
 
 }

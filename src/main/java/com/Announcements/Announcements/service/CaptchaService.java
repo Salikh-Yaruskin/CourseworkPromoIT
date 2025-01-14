@@ -1,11 +1,13 @@
 package com.Announcements.Announcements.service;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Map;
 
+@Slf4j
 @Service
 public class CaptchaService {
 
@@ -18,6 +20,7 @@ public class CaptchaService {
     private static final String TEST_CAPTCHA_TOKEN = "test-captcha-token";
 
     public boolean validateCaptcha(String captchaResponse) {
+        log.info("Проверка Captcha: {}", captchaResponse);
         if (TEST_CAPTCHA_TOKEN.equals(captchaResponse)) {
             return true;
         }

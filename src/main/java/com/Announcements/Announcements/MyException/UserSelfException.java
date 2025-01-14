@@ -1,15 +1,14 @@
 package com.Announcements.Announcements.MyException;
 
+import lombok.Getter;
+
+@Getter
 public class UserSelfException extends Exception {
-    private String additionalInfo;
+    private final String additionalInfo;
 
     public UserSelfException(String message, String additionalInfo) {
         super(message);
         this.additionalInfo = additionalInfo;
-    }
-
-    public String getAdditionalInfo() {
-        return additionalInfo;
     }
 
     @Override

@@ -15,11 +15,11 @@ import java.util.Optional;
 @Repository
 public interface NewsRepository extends JpaRepository<News, Integer> {
 
-    List<News> findAllByUserId(Integer userId);
+    List<News> findAllByUser(Integer userId);
 
     Optional<News> findById(Integer id);
 
-    @Query("SELECT n FROM News n WHERE n.user.id = :userId AND n.createdAt BETWEEN :startOfDay AND :endOfDay")
+    @Query("SELECT n FROM News n WHERE n.user = :userId AND n.createdAt BETWEEN :startOfDay AND :endOfDay")
     List<News> findAllByUserIdAndCreatedAtBetween(Integer userId, LocalDateTime startOfDay, LocalDateTime endOfDay);
 
     Page<News> findAll(Pageable pageable);
